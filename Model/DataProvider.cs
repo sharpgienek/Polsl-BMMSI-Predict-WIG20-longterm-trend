@@ -24,6 +24,7 @@ namespace Model
                     if (result == null)
                     {
                         result = checkedPeriod;
+                        result.OpenRate = result.CloseRate;
                     }
                     else
                     {
@@ -58,15 +59,21 @@ namespace Model
                     {
                         using (OleDbDataReader reader = excelCommand.ExecuteReader())
                         {
-                            reader.Read();
-                            return new ExchangePeriod()
+                            if (reader.Read())
                             {
-                                OpenRate = (double)reader["Kurs otwarcia"],
-                                CloseRate = (double)reader["Kurs zamknięcia"],
-                                PeriodStart = date,
-                                PeriodEnd = date,
-                                PublicTrading = (double)reader["Obrót"]
-                            };
+                                return new ExchangePeriod()
+                                {
+                                    OpenRate = (double)reader["Kurs otwarcia"],
+                                    CloseRate = (double)reader["Kurs zamknięcia"],
+                                    PeriodStart = date,
+                                    PeriodEnd = date,
+                                    PublicTrading = (double)reader["Obrót"]
+                                };
+                            }
+                            else
+                            {
+                                return null;
+                            }
                         }
                     }
                 }
@@ -105,12 +112,73 @@ namespace Model
             }
         }
 
-        public static List<ExchangePeriod> GetExchangePeriodsMergedByMovementDirectory(int DesiredNumberOfPeriods, DateTime periodsEndDate, DateTime periodsStartDate, int daysInterval)
+        public static List<ExchangePeriod> GetExchangePeriodsMergedByMovementDirectoryFromEndDate(int DesiredNumberOfPeriods, DateTime periodsEndDate, DateTime periodsStartDate, int daysInterval)
+        {
+            DateTime iterationDate = periodsEndDate.Date;
+            string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
+            List<ExchangePeriod> periodList = new List<ExchangePeriod>();
+            while (iterationDate >= periodsStartDate)
+            {
+                DateTime periodStart;
+                if (iterationDate.AddDays(-daysInterval) > periodsStartDate)
+                {
+                    periodStart = iterationDate.AddDays(-daysInterval);
+                }
+                else
+                {
+                    periodStart = periodsStartDate.Date;
+                }
+
+                ExchangePeriod period = GetExchangePeriod(periodStart, iterationDate);
+                if (period != null)
+                {
+                    period.PublicTrading -= GetExchangeDay(period.PeriodStart).PublicTrading;
+                    if (periodList.Count != 0)
+                    {
+                        periodList.First().OpenRate = period.CloseRate;
+                        
+                        //If percentage changes have the same sign.
+                        if ((periodList.First().PercentageChange * period.PercentageChange) > 0 || periodList.First().PeriodStart == periodList.First().PeriodEnd)
+                        {
+                            periodList.First().PeriodStart = period.PeriodStart;
+                            periodList.First().PublicTrading += period.PublicTrading;
+                            if ((periodList[0].PercentageChange * periodList[1].PercentageChange) > 0)
+                            {
+                                periodList[1].OpenRate = periodList[0].OpenRate;
+                                periodList[1].PeriodStart = periodList[0].PeriodStart;
+                                periodList[1].PublicTrading += periodList[0].PublicTrading;
+                                periodList.RemoveAt(0);
+                            }
+                        }
+                        else
+                        {
+                            if (periodList.Count == DesiredNumberOfPeriods + 1)
+                            {
+                                periodList.RemoveAt(0);
+                                break;
+                            }
+
+                            periodList.Insert(0, period);
+                        }
+                    }
+                    else
+                    {
+                        periodList.Add(period);
+                    }
+                }
+
+                iterationDate = iterationDate.AddDays(-daysInterval);
+            }
+
+            return periodList;
+        }
+
+        public static List<ExchangePeriod> GetExchangePeriodsMergedByMovementDirectoryFromStartDate(int DesiredNumberOfPeriods, DateTime periodsEndDate, DateTime periodsStartDate, int daysInterval)
         {
             DateTime iterationDate = periodsStartDate.Date;
             string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
             List<ExchangePeriod> periodList = new List<ExchangePeriod>();
-            while (periodList.Count < DesiredNumberOfPeriods && iterationDate <= periodsEndDate)
+            while (periodList.Count <= DesiredNumberOfPeriods && iterationDate <= periodsEndDate)
             {
                 DateTime periodEnd;
                 if (iterationDate.AddDays(daysInterval) < periodsEndDate)
@@ -147,11 +215,18 @@ namespace Model
                     }
                     else
                     {
+
+                        period.PublicTrading -= GetExchangeDay(period.PeriodStart).PublicTrading;
                         periodList.Add(period);
                     }
                 }
 
                 iterationDate = iterationDate.AddDays(daysInterval);
+            }
+
+            while (periodList.Count > DesiredNumberOfPeriods)
+            {
+                periodList.Remove(periodList.Last());
             }
 
             return periodList;

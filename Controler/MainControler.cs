@@ -28,8 +28,9 @@ namespace Controler
             }
 
             updateProgress.Method.Invoke(updateProgress.Target, new object[] { downloader.DownloadProgress });
-
-            DataProvider.GetExchangePeriodsMergedByMovementDirectory(5, new DateTime(2012, 8, 12), new DateTime(1990, 1, 1), 1);
+            
+            DataProvider.GetExchangePeriodsMergedByMovementDirectoryFromEndDate(5, new DateTime(2012, 8, 24), new DateTime(1990, 1, 1), 7);
+            DataProvider.GetExchangePeriodsMergedByMovementDirectoryFromStartDate(5, new DateTime(2012, 8, 24), new DateTime(2012, 4, 20), 7);
         }
     }
 }

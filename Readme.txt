@@ -8,3 +8,9 @@ ver. 0.1
 ver. 0.11 
 	-Dodano metodê pobieraj¹c¹ listê okresów po³¹czonych kierunkiem ruchu trendu, rozpoczynaj¹c¹ poszukiwania od daty koñca.
 	-Poprawiono dzia³anie metody pobieraj¹cej listê okresów po³¹czonych kierunkiem ruchu trendu, rozpoczynaj¹c¹ poszukiwania od daty pocz¹tku.
+
+ver. 0.12
+	-Poprawiono dzia³anie metody pobieraj¹cej listê okresów po³¹czonych kierunkiem ruchu trendu, rozpoczynaj¹c¹ poszukiwania od daty koñca.
+	-Zczytywanie i zapis listy dni notowañ do pliku xml.
+	-Operowanie na liœcie dni notowañ zamiast plikach xls.
+	-Tworzenie plików ucz¹cych dla ró¿nych rodzajów sieci neuronowych.

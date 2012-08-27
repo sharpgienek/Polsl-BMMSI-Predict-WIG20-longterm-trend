@@ -6,12 +6,128 @@ using DTO;
 using System.IO;
 using System.Reflection;
 using System.Data.OleDb;
+using System.Xml.Serialization;
+using System.Diagnostics;
 
 namespace Model
 {
     public class DataProvider
     {
-        public static ExchangePeriod GetExchangePeriod(DateTime startDate, DateTime endDate)
+        private static DataProvider instance;
+
+        public static DataProvider Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new DataProvider();
+                }
+
+                return instance;
+            }
+        }
+
+        private List<ExchangeDay> exchangeDays;
+
+        private DataProvider()
+        {
+           // InitializeExchangeDaysFromXls();
+            InitializeExchangeDays();
+        }
+
+        private void SaveExchangeDays(string path)
+        {
+            StringWriter writer = new StringWriter();
+
+            XmlSerializer serializer = new XmlSerializer(typeof(List<ExchangeDay>));
+            serializer.Serialize(writer, this.exchangeDays);
+
+            File.WriteAllText(path, writer.ToString());
+        }
+
+        private List<ExchangeDay> GetExchangeDaysFromXls()
+        {
+            this.exchangeDays = new List<ExchangeDay>();
+            string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
+            List<ExchangeDay> results = new List<ExchangeDay>();
+            foreach (DateTime date in DataDownloader.Instance.ExchangeDates)
+            {
+                ExchangeDay day = GetExchangeDayFromXls(date);
+                if (day != null)
+                {
+                    results.Add(day);
+                }                
+            }
+
+            if (results.Count != 0)
+            {
+                return results;
+            }
+
+            return null;
+        }
+
+        private void InitializeExchangeDays()
+        {
+            this.exchangeDays = GetExchangeDaysFromXml(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\exchange days.xml");
+            bool needToSaveNewXml = false;
+            if (this.exchangeDays != null)
+            {
+                if (this.exchangeDays.Last().Date != DataDownloader.Instance.ExchangeDates.Last())
+                {
+                    needToSaveNewXml = true;
+                    do
+                    {
+                        ExchangeDay day = GetExchangeDayFromXls(GetNextExchangeQuotationDate(this.exchangeDays.Last().Date, 1));
+                        if (day != null)
+                        {
+                            this.exchangeDays.Add(day);
+                        }
+                        else
+                        {
+                            //todo wtf? :P
+                        }
+
+                    } while (this.exchangeDays.Last().Date != DataDownloader.Instance.ExchangeDates.Last());
+                }
+
+                if (needToSaveNewXml)
+                {
+                    SaveExchangeDays(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\" + "exchange days.xml");
+                }
+            }
+            else
+            {
+                this.exchangeDays = GetExchangeDaysFromXls();
+                if (this.exchangeDays == null)
+                {
+                    this.exchangeDays = new List<ExchangeDay>();
+                }
+                else
+                {
+                    SaveExchangeDays(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\" + "exchange days.xml");
+                }
+            }
+        }
+
+        private List<ExchangeDay> GetExchangeDaysFromXml(string path)
+        {
+            //todo try/catch?
+            try
+            {
+                StringReader reader = new StringReader(File.ReadAllText(path));
+
+                XmlSerializer serializer = new XmlSerializer(typeof(List<ExchangeDay>));
+                return (List<ExchangeDay>)serializer.Deserialize(reader);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public ExchangePeriod GetExchangePeriod(DateTime startDate, DateTime endDate)
         {
             DateTime checkedDate = startDate.Date;
             ExchangePeriod result = null;
@@ -24,7 +140,6 @@ namespace Model
                     if (result == null)
                     {
                         result = checkedPeriod;
-                        result.OpenRate = result.CloseRate;
                     }
                     else
                     {
@@ -43,7 +158,12 @@ namespace Model
             return result;
         }
 
-        public static ExchangePeriod GetExchangeDay(DateTime date)
+        public ExchangeDay GetExchangeDay(DateTime date)
+        {
+            return this.exchangeDays.SingleOrDefault(d => d.Date == date);
+        }
+
+        private static ExchangeDay GetExchangeDayFromXls(DateTime date)
         {
             string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
             if (File.Exists(dataPath + date.Date.ToShortDateString() + "_indeksy.xls"))
@@ -53,7 +173,7 @@ namespace Model
                 {
                     connection.Open();
                     using (OleDbCommand excelCommand = new OleDbCommand(
-                        "SELECT Zmiana, Obrót, `Kurs otwarcia` , `Kurs zamknięcia` " +
+                        "SELECT Obrót, `Kurs zamknięcia` " +
                         "FROM [Worksheet$] " +
                         "WHERE Nazwa = 'WIG20'", connection))
                     {
@@ -61,14 +181,12 @@ namespace Model
                         {
                             if (reader.Read())
                             {
-                                return new ExchangePeriod()
+                                return (new ExchangeDay()
                                 {
-                                    OpenRate = (double)reader["Kurs otwarcia"],
                                     CloseRate = (double)reader["Kurs zamknięcia"],
-                                    PeriodStart = date,
-                                    PeriodEnd = date,
-                                    PublicTrading = (double)reader["Obrót"]
-                                };
+                                    PublicTrading = (double)reader["Obrót"],
+                                    Date = date
+                                });
                             }
                             else
                             {
@@ -78,13 +196,11 @@ namespace Model
                     }
                 }
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
-        private static double GetPublicTrading(DateTime date)
+        private double GetPublicTrading(DateTime date)
         {
             string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
             if (File.Exists(dataPath + date.Date.ToShortDateString() + "_indeksy.xls"))
@@ -112,7 +228,7 @@ namespace Model
             }
         }
 
-        public static List<ExchangePeriod> GetExchangePeriodsMergedByMovementDirectoryFromEndDate(int DesiredNumberOfPeriods, DateTime periodsEndDate, DateTime periodsStartDate, int daysInterval)
+        public List<ExchangePeriod> GetExchangePeriodsMergedByMovementDirectoryFromEndDate(int DesiredNumberOfPeriods, DateTime periodsEndDate, DateTime periodsStartDate, int daysInterval)
         {
             DateTime iterationDate = periodsEndDate.Date;
             string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
@@ -132,6 +248,7 @@ namespace Model
                 ExchangePeriod period = GetExchangePeriod(periodStart, iterationDate);
                 if (period != null)
                 {
+                    
                     period.PublicTrading -= GetExchangeDay(period.PeriodStart).PublicTrading;
                     if (periodList.Count != 0)
                     {
@@ -140,13 +257,18 @@ namespace Model
                         //If percentage changes have the same sign.
                         if ((periodList.First().PercentageChange * period.PercentageChange) > 0 || periodList.First().PeriodStart == periodList.First().PeriodEnd)
                         {
-                            periodList.First().PeriodStart = period.PeriodStart;
                             periodList.First().PublicTrading += period.PublicTrading;
-                            if ((periodList[0].PercentageChange * periodList[1].PercentageChange) > 0)
+                            if (period.PeriodEnd != periodList.First().PeriodStart)
+                            {
+                                periodList.First().PublicTrading += GetExchangeDay(periodList.First().PeriodStart).PublicTrading;
+                            }
+
+                            periodList.First().PeriodStart = period.PeriodStart;
+                            if ((periodList.Count > 1) && ((periodList[0].PercentageChange * periodList[1].PercentageChange) > 0))
                             {
                                 periodList[1].OpenRate = periodList[0].OpenRate;
                                 periodList[1].PeriodStart = periodList[0].PeriodStart;
-                                periodList[1].PublicTrading += periodList[0].PublicTrading;
+                                periodList[1].PublicTrading += periodList[0].PublicTrading + GetExchangeDay(periodList[1].PeriodStart).PublicTrading;
                                 periodList.RemoveAt(0);
                             }
                         }
@@ -173,7 +295,7 @@ namespace Model
             return periodList;
         }
 
-        public static List<ExchangePeriod> GetExchangePeriodsMergedByMovementDirectoryFromStartDate(int DesiredNumberOfPeriods, DateTime periodsEndDate, DateTime periodsStartDate, int daysInterval)
+        public List<ExchangePeriod> GetExchangePeriodsMergedByMovementDirectoryFromStartDate(int DesiredNumberOfPeriods, DateTime periodsEndDate, DateTime periodsStartDate, int daysInterval)
         {
             DateTime iterationDate = periodsStartDate.Date;
             string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
@@ -230,6 +352,34 @@ namespace Model
             }
 
             return periodList;
+        }
+
+        public DateTime GetNextExchangeQuotationDate(DateTime baseExchangeQuotationDate, int offset)
+        {
+            DataDownloader downloader = DataDownloader.Instance;
+            int indexOfClosestDate = -1;
+            for (int i = downloader.ExchangeDates.Count - 1; i >= 0; --i)
+            {
+                if (downloader.ExchangeDates[i] <= baseExchangeQuotationDate)
+                {
+                    indexOfClosestDate = i;
+                    break;
+                }
+            }
+
+            if (indexOfClosestDate == -1)
+            {
+                return new DateTime(1, 1, 1);
+            }
+
+            try
+            {
+                return downloader.ExchangeDates[indexOfClosestDate + offset];
+            }
+            catch
+            {
+                return new DateTime(1, 1, 1);
+            }
         }
     }
 }

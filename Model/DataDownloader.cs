@@ -13,6 +13,21 @@ namespace Model
 {
     public class DataDownloader
     {
+        private static DataDownloader instance;
+
+        public static DataDownloader Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new DataDownloader();
+                }
+
+                return instance;
+            }
+        }
+
         private int toDownload;
 
         private int downloaded;
@@ -21,7 +36,7 @@ namespace Model
 
         private List<DateTime> exchangeDates;
 
-        private List<DateTime> ExchangeDates
+        public List<DateTime> ExchangeDates
         {
             get
             {
@@ -46,14 +61,14 @@ namespace Model
             }
         }
         
-        public DataDownloader()
+        private DataDownloader()
         {
         }
 
         public void DownloadData()
         {    
             this.DownloadStatus = "Initializing download.";
-            DeleteIncorrectFiles();
+            //DeleteIncorrectFiles();
             this.toDownload = this.ExchangeDates.Count;
             string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
             this.DownloadStatus = "Download in progress.";
@@ -101,7 +116,7 @@ namespace Model
             if (this.downloadProgress == 0.99)
             {
                 this.DownloadStatus = "Finalizing download.";
-                DeleteIncorrectFiles();
+               // DeleteIncorrectFiles();
                 this.DownloadStatus = "Download complete.";
                 this.downloadProgress = 1;
             }
@@ -143,7 +158,7 @@ namespace Model
                 foreach (string date in datesArray)
                 {
                     string[] dateParts = date.Split('-');
-                    result.Add(new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2])));
+                    result.Insert(0,(new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2]))));
                 }                
             }
             if (result.Count == 0)

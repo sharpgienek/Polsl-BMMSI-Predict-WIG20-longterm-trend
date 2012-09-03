@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Data.OleDb;
 using System.Reflection;
 using System.Threading;
+using DTO.DTOEventArgs;
 
 namespace Model
 {
@@ -30,10 +31,56 @@ namespace Model
 
         private int toDownload;
 
-        private int downloaded;
+        private int numberOfDownloadedFilesAssignOnlyInPropertySetter;
 
-        private double downloadProgress;
+        public string DataDirectory { get; set; }
 
+        private int NumberOfDownloadedFiles
+        {
+            get
+            {
+                return this.numberOfDownloadedFilesAssignOnlyInPropertySetter;
+            }
+
+            set
+            {
+                int oldValue = this.numberOfDownloadedFilesAssignOnlyInPropertySetter;
+
+                if (value >= this.toDownload)
+                {
+                    this.numberOfDownloadedFilesAssignOnlyInPropertySetter = this.toDownload;
+                }
+                else
+                {
+                    if (value <= 0)
+                    {
+                        this.numberOfDownloadedFilesAssignOnlyInPropertySetter = 0;
+                    }
+                    else
+                    {
+                        this.numberOfDownloadedFilesAssignOnlyInPropertySetter = value;
+                    }
+                }
+
+                if (this.numberOfDownloadedFilesAssignOnlyInPropertySetter != oldValue)
+                {
+                    EventHandler<DownloadProgressChangedDTOEventArgs> temp = this.DownloadProgressChanged;
+                    if (temp != null)
+                    {
+                        temp.Invoke(this, new DownloadProgressChangedDTOEventArgs()
+                        {
+                            Progress = this.DownloadProgress
+                        });
+                    }
+
+                    if (this.numberOfDownloadedFilesAssignOnlyInPropertySetter == this.toDownload)
+                    {
+                        this.DownloadStatus = "Download complete.";
+                    }
+                }
+            }
+        }
+        
         private List<DateTime> exchangeDates;
 
         public List<DateTime> ExchangeDates
@@ -51,74 +98,121 @@ namespace Model
 
         public DateTime FirstStockExchangeQuotationDate { get; set; }
 
-        public string DownloadStatus { get; set; }
+        public event EventHandler DownloadComplete;
+
+        private string downloadStatusAssignOnlyThruPropertySetter;
+
+        public string DownloadStatus
+        {
+            get
+            {
+                return this.downloadStatusAssignOnlyThruPropertySetter;
+            }
+
+            set
+            {
+                this.downloadStatusAssignOnlyThruPropertySetter = value;
+                if (value.Equals("Download complete."))
+                {
+                    EventHandler tmp = this.DownloadComplete;
+                    if (tmp != null)
+                    {
+                        tmp.Invoke(this, EventArgs.Empty);
+                    }
+                }
+            }
+        }
+
+        public event EventHandler<DownloadProgressChangedDTOEventArgs> DownloadProgressChanged;
+
+        private List<DateTime> datesToDownload;
 
         public double DownloadProgress
         {
-            get 
+            get
             {
-                return downloadProgress;
+                if (this.toDownload == 0)
+                {
+                    return 100;
+                }
+                
+                return this.NumberOfDownloadedFiles * 100 / this.toDownload;
             }
         }
         
         private DataDownloader()
         {
+            this.DataDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
         }
-
+        
         public void DownloadData()
         {    
             this.DownloadStatus = "Initializing download.";
-            //DeleteIncorrectFiles();
-            this.toDownload = this.ExchangeDates.Count;
-            string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
-            this.DownloadStatus = "Download in progress.";
-            int i = 0;
+            this.toDownload = this.ExchangeDates.Count;            
+            this.datesToDownload = new List<DateTime>();
             foreach(DateTime date in this.ExchangeDates)
             {
-                if (File.Exists(dataPath + date.ToShortDateString() + "_indeksy.xls"))
+                if (File.Exists(this.DataDirectory + date.ToShortDateString() + "_indeksy.xls"))
                 {
-                    this.toDownload--;
                     continue;
                 }
-                    
-                String address = "http://www.gpw.pl/notowania_archiwalne?type=1&date=" + date.ToShortDateString() + "&fetch.x=25&fetch.y=18";
 
-                using (WebClient webClient = new WebClient())
-                {
-                    i++;
-                    Uri uri = new Uri(address);
-                    webClient.DownloadFileCompleted += new AsyncCompletedEventHandler(FileDownloaded);
-                    webClient.DownloadFileAsync(uri, dataPath + date.ToShortDateString() + "_indeksy.xls");
-                }
-
-                while (this.downloaded + 10 < i)
-                {
-                    Thread.Sleep(10);
-                }
-
+                this.datesToDownload.Add(date);
             }
-            
-            if (this.toDownload == this.downloaded)
+
+            this.toDownload = this.datesToDownload.Count;
+
+            if (this.toDownload != 0)
+            {
+                this.DownloadStatus = "Download in progress.";
+
+                List<DateTime> initialDownloadRange;
+                 if (this.datesToDownload.Count >= 10)
+                 {
+                     initialDownloadRange = this.datesToDownload.GetRange(this.datesToDownload.Count - 10, 10);
+                     this.datesToDownload.RemoveRange(this.datesToDownload.Count - 10, 10);
+                 }
+                 else
+                 {
+                     initialDownloadRange = this.datesToDownload.GetRange(0, this.datesToDownload.Count);
+                     this.datesToDownload.RemoveRange(0, this.datesToDownload.Count);
+                 }                
+
+                foreach (DateTime date in initialDownloadRange)
+                {
+                    DownloadFileAsync(
+                        "http://www.gpw.pl/notowania_archiwalne?type=1&date=" + date.ToShortDateString() + "&fetch.x=25&fetch.y=18",
+                        this.DataDirectory + date.ToShortDateString() + "_indeksy.xls"
+                        );
+                }
+            }
+            else
             {
                 this.DownloadStatus = "Download complete.";
-                this.downloadProgress = 1;
+            }
+        }
+
+        private void DownloadFileAsync(string address, string path)
+        {
+            using (WebClient webClient = new WebClient())
+            {
+                Uri uri = new Uri(address);
+                webClient.DownloadFileCompleted += new AsyncCompletedEventHandler(FileDownloaded);
+                webClient.DownloadFileAsync(uri, path);
             }
         }
 
         private void FileDownloaded(object sender, AsyncCompletedEventArgs e)
-        {
-            this.downloaded++;
-            if ((this.downloaded / this.toDownload) > 0.01)
+        {//todo co gdy e.error?
+            this.NumberOfDownloadedFiles++;
+            if (this.datesToDownload != null && this.datesToDownload.Count != 0)
             {
-                this.downloadProgress = (this.downloaded / this.toDownload) - 0.01;
-            }
-
-            if (this.downloadProgress == 0.99)
-            {
-                this.DownloadStatus = "Finalizing download.";
-               // DeleteIncorrectFiles();
-                this.DownloadStatus = "Download complete.";
-                this.downloadProgress = 1;
+                DateTime date = this.datesToDownload.Last();
+                DownloadFileAsync(
+                         "http://www.gpw.pl/notowania_archiwalne?type=1&date=" + date.ToShortDateString() + "&fetch.x=25&fetch.y=18",
+                         this.DataDirectory + this.datesToDownload.Last().ToShortDateString() + "_indeksy.xls"
+                         );
+                this.datesToDownload.Remove(date);
             }
         }
 
@@ -137,7 +231,7 @@ namespace Model
                         con.Open();
                         con.Close();
                     }
-                    catch (OleDbException e)
+                    catch
                     {
                         File.Delete(dataPath + date.ToShortDateString() + "_indeksy.xls");
                     }
@@ -150,6 +244,7 @@ namespace Model
             List<DateTime> result = new List<DateTime>();
             using (WebClient client = new WebClient())
             {
+                //todo co gdy błąd
                 string datesText = client.DownloadString("http://www.gpw.pl/notowania_archiwalne");
                 datesText = datesText.Substring(datesText.IndexOf("calendarEnabledDates = {'") + "calendarEnabledDates = {'".Length);
                 datesText = datesText.Remove(datesText.IndexOf("':1}"));

@@ -160,6 +160,7 @@ namespace Model
 
         public ExchangeDay GetExchangeDay(DateTime date)
         {
+            //todo dwa ostatnie elementy this.exchangeDays się powtarzają..
             return this.exchangeDays.SingleOrDefault(d => d.Date == date);
         }
 
@@ -380,6 +381,34 @@ namespace Model
             {
                 return new DateTime(1, 1, 1);
             }
+        }
+
+        public List<TrainingDataFileParameters> GetTrainingDataFilesParameters(string trainingDataDirectoryPath)
+        {
+            List<TrainingDataFileParameters> result = new List<TrainingDataFileParameters>();
+            string[] filePaths = Directory.GetFiles(trainingDataDirectoryPath, "*.txt");
+            foreach (string filePath in filePaths)
+            {
+                try
+                {
+                    string fileName = (Path.GetFileName(filePath));
+                    string fileNameWithoutExtension = fileName.Remove(fileName.Length - 4);
+                    string[] fileNameParts = fileNameWithoutExtension.Split(' ');
+                    string[] dateParts = fileNameParts[2].Split('-');
+                    result.Add(new TrainingDataFileParameters()
+                    {
+                        FileName = fileName,
+                        KeyDate = new DateTime(Convert.ToInt32(dateParts[0]), Convert.ToInt32(dateParts[1]), Convert.ToInt32(dateParts[2])),
+                        NumberOfPeriods = Convert.ToInt32(fileNameParts[0]),
+                        NumberOfPatterns = Convert.ToInt32(fileNameParts[1])
+                    });
+                }
+                catch
+                {
+                }
+            }
+
+            return result;
         }
     }
 }

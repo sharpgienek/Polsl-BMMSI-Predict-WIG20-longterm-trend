@@ -40,9 +40,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TrendDirection.cs" />
+    <Compile Include="DTOEventArgs\DownloadProgressChangedDTOEventArgs.cs" />
+    <Compile Include="DTOEventArgs\ProgressChangedEventArgs.cs" />
+    <Compile Include="DTOEventArgs\InitializationStatusChangedEventArgs.cs" />
+    <Compile Include="DTOEventArgs\ComputingThreadProgressChangedEventArgs.cs" />
     <Compile Include="ExchangeDay.cs" />
     <Compile Include="ExchangePeriod.cs" />
+    <Compile Include="NetworkMSE.cs" />
+    <Compile Include="NeuralNetworkParameters.cs" />
+    <Compile Include="TrainingDataFileParameters.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TrendDirectionWithPropability.cs" />
+    <Compile Include="UpdateInitProgressEventArgs.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

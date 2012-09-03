@@ -1,8 +1,7 @@
 ¯eby zadzia³a³o nale¿y:
 1. Podaæ poprawn¹ referencjê w projekcie BMMSI do pliku /FANN/Fann.Net.dll.
 2. Przekopiowaæ /FANN/fanndoubleMT.dll do folderu z plikiem wykonywalnym.
-3. Poleca siê skopiowanie folderu data do folderu z plikiem wykonywalnym. Zapobiegnie to pobieraniu tych danych ze strony gpw.
-
+3. Poleca siê skopiowanie ca³ej zawartoœci folderu /Paste content to exe folder do folderu z plikiem exe. Zawiera gotowe dane pobrane i wygenerowane.
 ver. 0.1 
 
 ver. 0.11 
@@ -14,3 +13,8 @@ ver. 0.12
 	-Zczytywanie i zapis listy dni notowañ do pliku xml.
 	-Operowanie na liœcie dni notowañ zamiast plikach xls.
 	-Tworzenie plików ucz¹cych dla ró¿nych rodzajów sieci neuronowych.
+
+ver. 0.13
+	-Generowanie danych testowych
+	-Wielow¹tkowe generowanie sieci neuronowych
+	-Testowanie przewidywania

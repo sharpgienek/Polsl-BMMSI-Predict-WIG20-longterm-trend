@@ -1,26 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using Model;
-using System.Threading;
-using DTO;
-using System.IO;
-using System.Reflection;
-using System.Globalization;
-using FANN.Net;
 using System.Diagnostics;
-using DTO.DTOEventArgs;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using DTO;
+using DTO.DTOEventArgs;
+using FANN.Net;
+using Model;
 
 namespace Controler
 {
+    /// <summary>
+    /// Główny kontroler. Jest Singletonem.
+    /// </summary>
     public class MainControler
     {
         private static MainControler instance;
 
+        /// <summary>
+        /// Zdarzenie zakończenia metody inicjalizacji.
+        /// </summary>
         public event EventHandler InitializationComplete;
 
+        /// <summary>
+        /// Instancja kontrolera.
+        /// </summary>
         public static MainControler Instance
         {
             get
@@ -34,17 +43,29 @@ namespace Controler
             }
         }
 
+        /// <summary>
+        /// Prywatny konstruktor zgodnie z modelem singletona.
+        /// </summary>
         private MainControler()
         {
             MaxComputingThreads = 1;
         }
 
+        /// <summary>
+        /// Właściwość określająca maksymalną liczbę wątków obliczeniowych.
+        /// </summary>
         public int MaxComputingThreads { get; set; }
 
+        /// <summary>
+        /// Zdarzenie zmiany statusu inicjalizacji.
+        /// </summary>
         public event EventHandler<InitializationStatusChangedEventArgs> InitializationStatusChanged;
 
         private string initializationStatusAssignOnlyThruPropertySetter;
 
+        /// <summary>
+        /// Status inicjalizacji.
+        /// </summary>
         public string InitializationStatus
         {
             get
@@ -53,30 +74,45 @@ namespace Controler
             }
             private set
             {
+                string oldValue = this.initializationStatusAssignOnlyThruPropertySetter;
                 this.initializationStatusAssignOnlyThruPropertySetter = value;
-                EventHandler<InitializationStatusChangedEventArgs> temp = this.InitializationStatusChanged;
-                if (temp != null)
+                if (!oldValue.Equals(this.initializationStatusAssignOnlyThruPropertySetter))
                 {
-                    temp.Invoke(this, new InitializationStatusChangedEventArgs()
+                    EventHandler<InitializationStatusChangedEventArgs> temp = this.InitializationStatusChanged;
+                    if (temp != null)
                     {
-                        Status = this.initializationStatusAssignOnlyThruPropertySetter
-                    });
+                        temp.Invoke(this, new InitializationStatusChangedEventArgs()
+                        {
+                            Status = this.initializationStatusAssignOnlyThruPropertySetter
+                        });
+                    }
                 }
             }
         }
 
+        /// <summary>
+        /// OBSOLETE! todo.
+        /// Zdarzenie zmiany postępu któregoś z wątków obliczeniowych. 
+        /// </summary>
         public event EventHandler<ComputingThreadProgressChangedEventArgs> ComputingThreadProgressChanged;
 
+        /// <summary>
+        /// Zdarzenie zmiany postępu inicjalizacji.
+        /// </summary>
         public event EventHandler<ProgressChangedEventArgs> InitializationProgressChanged;
 
         private double initializationProgressAssignOnlyThruPropertySetter;
 
+        /// <summary>
+        /// Właściwość określająca postęp metody inicjalizacji.
+        /// </summary>
         public double InitializationProgress
         {
             get
             {
                 return this.initializationProgressAssignOnlyThruPropertySetter;
             }
+
             private set
             {
                 double oldInitializationProgress = this.initializationProgressAssignOnlyThruPropertySetter;
@@ -120,8 +156,14 @@ namespace Controler
             }
         }
 
+        /// <summary>
+        /// Wartość stała określająca datę pierwszego dnia działania GPW w Polsce.
+        /// </summary>
         private readonly DateTime firstExchangeQuotationDate = new DateTime(1990, 4, 16);
 
+        /// <summary>
+        /// Metoda inicjalizacji.
+        /// </summary>
         public void Initialize()
         {
             this.InitializationProgress = 0;
@@ -172,18 +214,26 @@ namespace Controler
                     this.InitializationStatus = "Step " + currentStep.ToString() + "/" + numberOfSteps.ToString() + " : Creating and training networks";
 
                     CreateNetworks(10000, 10, 10, 0.2, 1.2, 0.05, 100 / (double)numberOfSteps);
-
-                    //this.InitializationProgress = 100;
                 });
 
             Thread downloadThread = new Thread(new ThreadStart(DataDownloader.Instance.DownloadData));
             downloadThread.Start();
         }
 
+        /// <summary>
+        /// Metoda tworzenia i uczenia sieci neuronowych.
+        /// </summary>
+        /// <param name="maxMaxEpochs">Maksymalna liczba epok.</param>
+        /// <param name="minMaxEpochs">Minimalna liczba epok.</param>
+        /// <param name="maxEpochsMultiplierStep">Krok mnożący liczby epok dla kolejnego rodzaju sieci. </param>
+        /// <param name="minHiddenLayersMultiplier">Minimalny mnożnik dla warstw ukrytych.</param>
+        /// <param name="maxHiddenLayersMultiplier">Maksymalny mnożnik dla wartw ukrytych.</param>
+        /// <param name="hiddenLayersMultiplierStep">Krok dodający dla mnożnika warstw ukrytych.</param>
+        /// <param name="methodProgressPart">Wartość (0 - 100) określająca jaka część postępu inicjalizacji należy do tej metody.</param>
         private void CreateNetworks(
             int maxMaxEpochs,
             int minMaxEpochs,
-            int maxEpochsMultiplierStep,
+            double maxEpochsMultiplierStep,
             double minHiddenLayersMultiplier,
             double maxHiddenLayersMultiplier,
             double hiddenLayersMultiplierStep,
@@ -446,7 +496,7 @@ namespace Controler
                 t.Start();
             }
         }
-
+       
         private void GenerateTestData(
             string dataPath,
             int minNumberOfPeriods,

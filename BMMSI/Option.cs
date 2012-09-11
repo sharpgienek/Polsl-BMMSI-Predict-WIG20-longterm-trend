@@ -48,6 +48,8 @@ namespace BMMSI
             textBoxHiddenStep.Text = (0.05).ToString();
             textBoxMSE.Text = (0.052).ToString();
 
+            textBoxThreads.Text = (6).ToString();
+
             textBoxDesiredPatNo.Validating += validateIntegerTextBox;
             textBoxEpochsStep.Validating += validateDoubleTextBox;
             textBoxHiddenStep.Validating += validateDoubleTextBox;
@@ -67,6 +69,7 @@ namespace BMMSI
             textBoxTrainingMinPeriod.Validating += validateIntegerTextBox;
             textBoxTrainingPeriodStep.Validating += validateIntegerTextBox;
             textBoxMSE.Validating += validateDoubleTextBox;
+            textBoxThreads.Validating += validateIntegerTextBox;
             //labelCreateNetwork.Text = ((int) 4 * (1.2 - 0.2) / 0.05).ToString();
         }
 
@@ -79,7 +82,7 @@ namespace BMMSI
         {
             TextBox text = (TextBox) sender;
             int result;
-            if (!int.TryParse(text.Text, out result))
+            if (!int.TryParse(text.Text, out result) || result <= 0)
             {
                 e.Cancel = true;
                 text.Text = "";
@@ -91,7 +94,7 @@ namespace BMMSI
         {
             TextBox text = (TextBox)sender;
             double result;
-            if (!double.TryParse(text.Text, out result))
+            if (!double.TryParse(text.Text, out result)|| result <= 0)
             {
                 e.Cancel = true;
                 text.Text = "";
@@ -141,6 +144,7 @@ namespace BMMSI
         private void buttonSave_Click(object sender, EventArgs e)
         {
             MainControler.Instance.CreateNewNeuralNets(CreateOptionDataFromForm());
+            MainControler.Instance.MaxComputingThreads = int.Parse(textBoxThreads.Text);
             Close();
         }
 

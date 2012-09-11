@@ -167,13 +167,24 @@ namespace Model
         private static ExchangeDay GetExchangeDayFromXls(DateTime date)
         {
             string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
-            string test = dataPath + date.Date.ToShortDateString() + "_indeksy.xls";
             if (File.Exists(dataPath + date.Date.ToShortDateString() + "_indeksy.xls"))
             {
                 String connectionString = @"Provider=Microsoft.Jet.OleDb.4.0; data source=" + dataPath + date.Date.ToShortDateString() + @"_indeksy.xls; Extended Properties=""Excel 8.0;HDR=Yes;IMEX=1""";
                 using (OleDbConnection connection = new OleDbConnection(connectionString))
                 {
-                    connection.Open();
+                    try
+                    {
+                        connection.Open();
+                    }
+                    catch
+                    {
+                        File.Delete(dataPath + date.Date.ToShortDateString() + @"_indeksy.xls");
+                        DataDownloader.Instance.DownloadFile(
+                            "http://www.gpw.pl/notowania_archiwalne?type=1&date=" + date.ToShortDateString() + "&fetch.x=25&fetch.y=18",
+                            dataPath + date.Date.ToShortDateString() + @"_indeksy.xls");
+                        connection.Open();
+                    }
+
                     using (OleDbCommand excelCommand = new OleDbCommand(
                         "SELECT Obrót, `Kurs zamknięcia` " +
                         "FROM [Worksheet$] " +

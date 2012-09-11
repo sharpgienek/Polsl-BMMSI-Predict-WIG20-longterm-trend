@@ -211,6 +211,15 @@ namespace Model
             }
         }
 
+        public void DownloadFile(string address, string path)
+        {
+            using (WebClient webClient = new WebClient())
+            {
+                Uri uri = new Uri(address);
+                webClient.DownloadFile(uri, path);
+            }
+        }
+
         private void FileDownloaded(object sender, AsyncCompletedEventArgs e)
         {//todo co gdy e.error?
             this.NumberOfDownloadedFiles++;

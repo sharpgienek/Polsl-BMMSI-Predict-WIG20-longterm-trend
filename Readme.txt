@@ -18,3 +18,6 @@ ver. 0.13
 	-Generowanie danych testowych
 	-Wielow¹tkowe generowanie sieci neuronowych
 	-Testowanie przewidywania
+
+ver. 0.17
+	-Naprawiono b³¹d z niepoprawnymi plikami xls.

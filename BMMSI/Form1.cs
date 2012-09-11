@@ -7,7 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Reflection;
 using Controler;
+using DTO;
 using DTO.DTOEventArgs;
 using FANN.Net;
 
@@ -24,6 +26,8 @@ namespace BMMSI
         public Form1()
         {
             InitializeComponent();
+            button1.Enabled = false;
+            button5.Enabled = false;
         }
 
         /// <summary>
@@ -162,7 +166,8 @@ namespace BMMSI
             MainControler.Instance.InitializationComplete +=
                 (s, eArgs) =>
                 {
-                    this.button4.BeginInvoke((Action)(() => this.button4.Enabled = true));
+                    this.button1.BeginInvoke((Action)(() => this.button1.Enabled = true));
+                    this.button5.BeginInvoke((Action)(() => this.button5.Enabled = true));
                 };
 
             MainControler.Instance.MaxComputingThreads = 6;
@@ -176,7 +181,21 @@ namespace BMMSI
         /// <param name="e">asdf.</param>
         private void button5_Click(object sender, EventArgs e)//todo nazwa metody.
         {
-            MainControler.Instance.PredictTrendDirection(this.dateTimePicker1.Value);
+            List<TrendDirectionWithPropability> results = new List<TrendDirectionWithPropability>();
+            if (folderBrowserDialogNetwork.ShowDialog() == DialogResult.OK)
+            {
+                results = MainControler.Instance.PredictTrendDirection(this.dateTimePicker1.Value, folderBrowserDialogNetwork.SelectedPath);
+                MessageBox.Show("Prediction for " + this.dateTimePicker1.Value.ToShortDateString() + "\n" + results[0].Direction.ToString() + " " +
+                   results[0].Propability.ToString() + "\n" + results[1].Direction.ToString() + " " +
+                   results[1].Propability.ToString() + "\n" + results[2].Direction.ToString() + " " +
+                   results[2].Propability.ToString());
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Form options = new Option();
+            options.Show();
         }
     }
 }

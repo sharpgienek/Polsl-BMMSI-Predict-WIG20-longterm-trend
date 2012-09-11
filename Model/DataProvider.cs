@@ -167,6 +167,7 @@ namespace Model
         private static ExchangeDay GetExchangeDayFromXls(DateTime date)
         {
             string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
+            string test = dataPath + date.Date.ToShortDateString() + "_indeksy.xls";
             if (File.Exists(dataPath + date.Date.ToShortDateString() + "_indeksy.xls"))
             {
                 String connectionString = @"Provider=Microsoft.Jet.OleDb.4.0; data source=" + dataPath + date.Date.ToShortDateString() + @"_indeksy.xls; Extended Properties=""Excel 8.0;HDR=Yes;IMEX=1""";

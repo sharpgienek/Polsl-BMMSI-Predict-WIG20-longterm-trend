@@ -189,6 +189,14 @@ namespace Model
             else
             {
                 this.DownloadStatus = "Download complete.";
+                EventHandler<DownloadProgressChangedDTOEventArgs> temp = this.DownloadProgressChanged;
+                if (temp != null)
+                {
+                    temp.Invoke(this, new DownloadProgressChangedDTOEventArgs()
+                    {
+                        Progress = 100
+                    });
+                }
             }
         }
 

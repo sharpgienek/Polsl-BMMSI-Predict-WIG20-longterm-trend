@@ -631,7 +631,6 @@ namespace Controler
             int exchangeDaysStep
             )
         {
-            int test;
             patternsSearchStartDate = DataProvider.Instance.GetNextExchangeQuotationDate(patternsSearchStartDate, 0);
             Directory.CreateDirectory(dataPath);
             for (int i = minNumberOfPeriods; i <= maxNumberOfPeriods; i += periodsStep)

@@ -21,3 +21,6 @@ ver. 0.13
 
 ver. 0.17
 	-Naprawiono b³¹d z niepoprawnymi plikami xls.
+
+ver. 0.18
+	-Dodano zliczanie sieci do stworzenia.

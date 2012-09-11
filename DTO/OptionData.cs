@@ -36,9 +36,30 @@ namespace DTO
         public double HiddenLayersMultiplierStep { get; set; }
         public double DesiredMSE { get; set; }
 
-        public OptionData()
+        public int NumberOfNetworksToCreate
         {
-            
+            get
+            {
+                int number = 0;
+                for (int i = TrainingMinNumberOfPeriods; i <= TrainingMaxNumberOfPeriods; i += TrainingPeriodsStep)
+                {
+                    for (int j = MinTrainingPatterns; j <= MaxTrainingPatterns; j += TrainingPatternsStep)
+                    {
+                        for (double h = MinEpochs; h <= MaxEpochs; h *= MaxEpochsMultiplierStep)
+                        {
+                            for (double l = MinHiddenLayersMultiplier; l <= MaxHiddenLayersMultiplier; l += HiddenLayersMultiplierStep)
+                            {
+                                number++;
+                            }
+                        }
+                    }
+                }
+                return number;
+            }
+        }
+
+        public OptionData()
+        {            
         }
     }
 }

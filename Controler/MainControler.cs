@@ -91,12 +91,6 @@ namespace Controler
         }
 
         /// <summary>
-        /// OBSOLETE! todo.
-        /// Zdarzenie zmiany postępu któregoś z wątków obliczeniowych. 
-        /// </summary>
-        public event EventHandler<ComputingThreadProgressChangedEventArgs> ComputingThreadProgressChanged;
-
-        /// <summary>
         /// Zdarzenie zmiany postępu inicjalizacji.
         /// </summary>
         public event EventHandler<ProgressChangedEventArgs> InitializationProgressChanged;
@@ -222,7 +216,6 @@ namespace Controler
                         this.InitializationProgress = (double)currentStep * 100 / numberOfSteps;
                         currentStep++;
                         this.InitializationStatus = "Step " + currentStep.ToString() + "/" + numberOfSteps.ToString() + " : Creating and training networks";
-
                         CreateNetworks(
                             option.NetPath,
                             Path.GetDirectoryName(option.TrainingPath),
@@ -305,6 +298,7 @@ namespace Controler
                 this.InitializationProgress = 100;
                 return;
             }
+
             string[] testFiles = Directory.GetFiles(testDataFolder);
             List<TrainingData> testDataList = new List<TrainingData>();
             foreach (string testFile in testFiles)
@@ -313,9 +307,6 @@ namespace Controler
                 if (td.ReadTrainFromFile(testDataFolder + "\\" + Path.GetFileName(testFile)))
                 {
                     testDataList.Add(td);
-                }
-                else
-                {//todo
                 }
             }
 
@@ -327,75 +318,28 @@ namespace Controler
                 {
                     trainingDataList.Add(td);
                 }
-                else
-                {//todo
-                }
             }
 
             string initStatus = this.InitializationStatus;
             Directory.CreateDirectory(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\" + path);
             List<Task> taskList = new List<Task>();
             NeuralNet.CallbackType[] callbacksArray = new NeuralNet.CallbackType[this.MaxComputingThreads];
-            //   Semaphore parameterListSemaphore = new Semaphore(1, 1);
-            //    Semaphore InitializationProgressSemaphore = new Semaphore(1, 1);
-            //   Semaphore lowestNetworkMSESemaphore = new Semaphore(1, 1);
-            //   Semaphore testDataSemaphore = new Semaphore(1, 1);
-            //   Semaphore trainAndTestDataInitializationSemaphore = new Semaphore(1, 1);
             Semaphore threadProgressSemaphore = new Semaphore(1, 1);
-            //   Semaphore newNeuralNetworkSemaphore = new Semaphore(1, 1);
-            //   Semaphore trainDataSemaphore = new Semaphore(1, 1);
-            // Semaphore trainStartSemaphore = new Semaphore(1, 1);
-            //  List<NeuralNet.CallbackType> c
-
             Semaphore allSem = new Semaphore(1, 1);
             TrainingData[] threadDataVars = new TrainingData[this.MaxComputingThreads];
-            Stopwatch[] threadStopwatches = new Stopwatch[this.MaxComputingThreads];
             for (int i = 1; i <= this.MaxComputingThreads; i++)
             {
                 int taskNumber = i;
-                // TrainingData data = 
                 threadDataVars[i - 1] = new TrainingData();
-                threadStopwatches[i - 1] = new Stopwatch();
-                NeuralNet.CallbackType callback =
-
-                    (nn, train, max_epochs, epochs_between_reports, de, epochs)
-                                            =>
-                    {
-                        //    trainStartSemaphore.Release();
-                        threadProgressSemaphore.WaitOne();
-                        EventHandler<ComputingThreadProgressChangedEventArgs> threadProgressChangedEvent = this.ComputingThreadProgressChanged;
-                        if (threadProgressChangedEvent != null)
-                        {
-                            threadProgressChangedEvent.Invoke(this, new ComputingThreadProgressChangedEventArgs()
-                            {
-                                TaskNumber = taskNumber,
-                                TaskProgress = epochs * 100 / max_epochs,
-                                CurrentEpoch = epochs,
-                                MaxEpochs = max_epochs,
-                                //  TimeLeft = new TimeSpan(((sw.Elapsed.Ticks * max_epochs) / epochs) - sw.Elapsed.Ticks),
-                                //  ElaspedTime = new TimeSpan(sw.Elapsed.Ticks)
-                                // TimeLeft = new TimeSpan(((threadStopwatches[taskNumber - 1].Elapsed.Ticks * max_epochs) / epochs) - sw.Elapsed.Ticks),
-                                TimeLeft = new TimeSpan(((threadStopwatches[taskNumber - 1].Elapsed.Ticks * max_epochs) / epochs) - threadStopwatches[taskNumber - 1].Elapsed.Ticks),
-                                ElaspedTime = new TimeSpan(threadStopwatches[taskNumber - 1].Elapsed.Ticks)
-                            });
-                        }
-
-                        threadProgressSemaphore.Release();
-                        return 0;
-                    };
-
-                callbacksArray[i - 1] = ((NeuralNet.CallbackType)callback.Clone());
-
+               
                 Task t = new Task((Action)(
                     () =>
                     {
                         while (true)
                         {
                             allSem.WaitOne();
-                            //  parameterListSemaphore.WaitOne();
                             if (parameters.Count == 0)
                             {
-                                //  parameterListSemaphore.Release();
                                 this.InitializationStatus = initStatus + " " + numberOfNetworksToCreate.ToString() + " / " + numberOfNetworksToCreate.ToString();
                                 this.InitializationProgress = 100;
                                 break;
@@ -404,13 +348,9 @@ namespace Controler
                             {
                                 NeuralNetworkParameters usedParameters = parameters.First();
                                 parameters.RemoveAt(0);
-                                //  parameterListSemaphore.Release();
-                                //NeuralNet net = CreateNetwork(usedParameters);
                                 if (!File.Exists(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + path + usedParameters.FileName))
                                 {
-                                    //   newNeuralNetworkSemaphore.WaitOne();
                                     NeuralNet net = new NeuralNet();
-                                    //   newNeuralNetworkSemaphore.Release();
                                     List<uint> layers = new List<uint>();
                                     layers.Add((uint)((usedParameters.fileParameters.NumberOfPeriods * 2) - 1)); // inputs
                                     layers.Add((uint)(layers[0] * usedParameters.hiddenLayersMultiplier)); // hidden
@@ -419,70 +359,18 @@ namespace Controler
                                     net.SetLearningRate((float)0.7);
                                     net.SetActivationFunctionHidden(ActivationFunction.SigmoidSymmetric);
                                     net.SetActivationFunctionOutput(ActivationFunction.SigmoidSymmetric);
-                                    //  trainAndTestDataInitializationSemaphore.WaitOne();
-                                    //TrainingData data = new TrainingData();
-                                    //  trainAndTestDataInitializationSemaphore.Release();
-                                    /*  while (!data.ReadTrainFromFile("training data\\" + usedParameters.fileParameters.FileName))
-                                      {
-                                      }*/
-                                    // Stopwatch sw = new Stopwatch();
-
-
-                                    //   sw.Reset();
-                                    threadStopwatches[taskNumber - 1].Reset();
-
-
+                                  
                                     net.Callback += callbacksArray[taskNumber - 1];
-                                    /*   net.Callback += (nn, train, max_epochs, epochs_between_reports, de, epochs)
-                                               =>
-                                       {
-                                           threadProgressSemaphore.WaitOne();
-                                           EventHandler<ComputingThreadProgressChangedEventArgs> threadProgressChangedEvent = this.ComputingThreadProgressChanged;
-                                           if (threadProgressChangedEvent != null)
-                                           {
-                                               threadProgressChangedEvent.Invoke(this, new ComputingThreadProgressChangedEventArgs()
-                                               {
-                                                   TaskNumber = taskNumber,
-                                                   TaskProgress = epochs * 100 / max_epochs,
-                                                   CurrentEpoch = epochs,
-                                                   MaxEpochs = max_epochs,
-                                                   TimeLeft = new TimeSpan(((sw.Elapsed.Ticks * max_epochs) / epochs) - sw.Elapsed.Ticks),
-                                                   ElaspedTime = new TimeSpan(sw.Elapsed.Ticks)
-                                               });
-                                           }
-
-                                           threadProgressSemaphore.Release();
-                                           return 0;
-                                       };*/
-
-                                    //sw.Start();
-                                    threadStopwatches[taskNumber - 1].Start();
-                                    //   trainDataSemaphore.WaitOne();
                                     threadDataVars[taskNumber - 1] = trainingDataList.Find((e) => ((e.NumInputTrainData == layers[0]) && (e.Input.Length == usedParameters.fileParameters.NumberOfPatterns)));
-                                    //  trainDataSemaphore.Release();
-                                    //          trainStartSemaphore.WaitOne();
                                     allSem.Release();
                                     net.TrainOnData(threadDataVars[taskNumber - 1],
                                             usedParameters.maxEpochs, // max iterations
-                                        //   usedParameters.maxEpochs / 100, // iterations between report
-                                            0,
+                                            0,// iterations between report
                                             0 //desired error
                                             );
                                     allSem.WaitOne();
-                                    //  sw.Stop();
-                                    threadStopwatches[taskNumber - 1].Stop();
-
-                                    //   testDataSemaphore.WaitOne();
-                                    //   trainAndTestDataInitializationSemaphore.WaitOne();
-                                    /*  while (!data.ReadTrainFromFile("test data\\" + usedParameters.fileParameters.NumberOfPeriods + " " + usedParameters.fileParameters.KeyDate.AddDays(-1).ToShortDateString() + ".txt."))
-                                      {//todo usunąć.
-                                      }*/
                                     net.TestData(testDataList.Find((e) => e.NumInputTrainData == layers[0]));
-
-                                    // trainAndTestDataInitializationSemaphore.Release();
-                                    //   testDataSemaphore.Release();
                                     double mse = net.GetMSE();
-                                    // lowestNetworkMSESemaphore.WaitOne();
                                     if (lowestNetworkMSE == null || lowestNetworkMSE.MSE > mse)
                                     {
                                         lowestNetworkMSE = new NetworkMSE()
@@ -496,21 +384,13 @@ namespace Controler
                                         XmlSerializer serializer = new XmlSerializer(typeof(NetworkMSE));
                                         serializer.Serialize(writer, lowestNetworkMSE);
                                         File.WriteAllText(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\" + path + "LowestMSENetwork.xml", writer.ToString());
-                                        //     lowestNetworkMSESemaphore.Release();
-                                    }
-                                    else
-                                    {
-                                        //    lowestNetworkMSESemaphore.Release();
                                     }
 
                                     net.Save(path + usedParameters.FileName);
                                 }
-
-                                //  InitializationProgressSemaphore.WaitOne();
                                 this.InitializationStatus = initStatus + " " + numberOfCreatedNetworks.ToString() + " / " + numberOfNetworksToCreate.ToString();
                                 numberOfCreatedNetworks++;
                                 this.InitializationProgress = (numberOfCreatedNetworks * methodProgressPart / numberOfNetworksToCreate) + methodStartProgress;
-                                //   InitializationProgressSemaphore.Release();
 
                             }
                             allSem.Release();
@@ -750,15 +630,16 @@ namespace Controler
             XmlSerializer serializer = new XmlSerializer(typeof(NetworkMSE));
             NetworkMSE lowesMSE = (NetworkMSE)serializer.Deserialize(reader);
             NeuralNet net = new NeuralNet();
-            if (!net.CreateFromFile(path + "\\" + lowesMSE.NetworkFileName));
-            return null;
+            if (!net.CreateFromFile(path + "\\" + lowesMSE.NetworkFileName))
+            {
+                return null;
+            }
             uint numberOfInputs = net.GetNumInput();
             uint numberOfPeriods = (numberOfInputs + 1) / 2;
             List<ExchangePeriod> periods = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromEndDate((int)numberOfPeriods, date, this.firstExchangeQuotationDate, 7);
             double[] inputs = new double[numberOfInputs];
             for (int i = 0; i < numberOfPeriods; i += 2)
             {
-                // trainingFileValues.Add(historicalData[h].PercentageChange.ToString(nfi));
                 inputs[i] = periods[i].PercentageChange;
                 if (i + 1 < periods.Count)
                 {
@@ -804,9 +685,6 @@ namespace Controler
                 results.Trends.Add(td);
             }
 
-            //periods = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromStartDate((int)3, DateTime.Today, date, 7);
-
-            //TrendDirection testTrueDirection = GetTrendDirection(periods, 0);
             int[] resultParam = DataProvider.Instance.GetNetParametersFromFile(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\" + path + "\\" + lowesMSE.NetworkFileName);
             if (resultParam != null)
             {

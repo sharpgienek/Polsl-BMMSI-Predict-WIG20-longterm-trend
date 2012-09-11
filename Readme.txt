@@ -24,3 +24,5 @@ ver. 0.17
 
 ver. 0.18
 	-Dodano zliczanie sieci do stworzenia.
+
+ver. 0.19

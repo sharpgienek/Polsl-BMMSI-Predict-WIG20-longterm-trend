@@ -221,7 +221,7 @@ namespace Model
         }
 
         private void FileDownloaded(object sender, AsyncCompletedEventArgs e)
-        {//todo co gdy e.error?
+        {
             this.NumberOfDownloadedFiles++;
             if (this.datesToDownload != null && this.datesToDownload.Count != 0)
             {
@@ -262,7 +262,6 @@ namespace Model
             List<DateTime> result = new List<DateTime>();
             using (WebClient client = new WebClient())
             {
-                //todo co gdy błąd
                 string datesText = client.DownloadString("http://www.gpw.pl/notowania_archiwalne");
                 datesText = datesText.Substring(datesText.IndexOf("calendarEnabledDates = {'") + "calendarEnabledDates = {'".Length);
                 datesText = datesText.Remove(datesText.IndexOf("':1}"));

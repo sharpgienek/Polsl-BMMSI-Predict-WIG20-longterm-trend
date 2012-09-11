@@ -84,10 +84,6 @@ namespace Model
                         {
                             this.exchangeDays.Add(day);
                         }
-                        else
-                        {
-                            //todo wtf? :P
-                        }
 
                     } while (this.exchangeDays.Last().Date != DataDownloader.Instance.ExchangeDates.Last());
                 }
@@ -113,7 +109,6 @@ namespace Model
 
         private List<ExchangeDay> GetExchangeDaysFromXml(string path)
         {
-            //todo try/catch?
             try
             {
                 StringReader reader = new StringReader(File.ReadAllText(path));
@@ -160,7 +155,6 @@ namespace Model
 
         public ExchangeDay GetExchangeDay(DateTime date)
         {
-            //todo dwa ostatnie elementy this.exchangeDays się powtarzają..
             return this.exchangeDays.SingleOrDefault(d => d.Date == date);
         }
 

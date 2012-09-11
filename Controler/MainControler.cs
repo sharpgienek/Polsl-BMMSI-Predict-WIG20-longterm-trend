@@ -396,6 +396,8 @@ namespace Controler
                             if (parameters.Count == 0)
                             {
                                 //  parameterListSemaphore.Release();
+                                this.InitializationStatus = initStatus + " " + numberOfNetworksToCreate.ToString() + " / " + numberOfNetworksToCreate.ToString();
+                                this.InitializationProgress = 100;
                                 break;
                             }
                             else
@@ -734,14 +736,23 @@ namespace Controler
             return TrendDirection.Sideways;
         }
 
-        public List<TrendDirectionWithPropability> PredictTrendDirection(DateTime date, string path)
+        public PredictionResult PredictTrendDirection(DateTime date, string path)
         {
             path = Path.GetFileName(path);
-            StringReader reader = new StringReader(File.ReadAllText(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\" + path + "\\LowestMSENetwork.xml"));
+            StringReader reader;
+            try
+            {
+                reader = new StringReader(File.ReadAllText(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\" + path + "\\LowestMSENetwork.xml"));
+            }
+            catch
+            {
+                return null;
+            }
             XmlSerializer serializer = new XmlSerializer(typeof(NetworkMSE));
             NetworkMSE lowesMSE = (NetworkMSE)serializer.Deserialize(reader);
             NeuralNet net = new NeuralNet();
-            net.CreateFromFile(path + "\\" + lowesMSE.NetworkFileName);
+            if (!net.CreateFromFile(path + "\\" + lowesMSE.NetworkFileName));
+            return null;
             uint numberOfInputs = net.GetNumInput();
             uint numberOfPeriods = (numberOfInputs + 1) / 2;
             List<ExchangePeriod> periods = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromEndDate((int)numberOfPeriods, date, this.firstExchangeQuotationDate, 7);
@@ -756,8 +767,8 @@ namespace Controler
                 }
             }
             double[] result = net.Run(inputs);
-            List<TrendDirectionWithPropability> results = new List<TrendDirectionWithPropability>();
-
+            PredictionResult results = new PredictionResult();
+            results.Trends = new List<TrendDirectionWithPropability>();
             double sum = 0;
             foreach (double r in result)
             {
@@ -791,13 +802,21 @@ namespace Controler
                         td.Direction = TrendDirection.Up;
                         break;
                 }
-                results.Add(td);
+                results.Trends.Add(td);
             }
 
             //periods = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromStartDate((int)3, DateTime.Today, date, 7);
 
             //TrendDirection testTrueDirection = GetTrendDirection(periods, 0);
-
+            int[] resultParam = DataProvider.Instance.GetNetParametersFromFile(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\" + path + "\\" + lowesMSE.NetworkFileName);
+            if (resultParam != null)
+            {
+                results.PeriodNo = resultParam[0];
+                results.PatternsNo = resultParam[1];
+                results.NeuronNo = resultParam[2];
+                results.EpochsNo = resultParam[3];
+            }
+            results.MSE = lowesMSE.MSE;
             return results;
 
         }

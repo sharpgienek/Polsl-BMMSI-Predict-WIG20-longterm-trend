@@ -411,5 +411,26 @@ namespace Model
 
             return result;
         }
+
+        public int[] GetNetParametersFromFile(string fileName)
+        {
+            int[] result = new int[4];
+            fileName = Path.GetFileName(fileName);
+            try
+            {
+                string fileNameWithoutExtension = fileName.Remove(fileName.Length - 4);
+                string[] fileNameParts = fileNameWithoutExtension.Split(' ');
+                result[0] = Convert.ToInt32(fileNameParts[0]);
+                result[1] = Convert.ToInt32(fileNameParts[1]);
+                result[2] = Convert.ToInt32(fileNameParts[3]);
+                result[3] = Convert.ToInt32(fileNameParts[4]);
+                return result;
+            }
+            catch
+            {
+                return null;
+            }
+
+        }
     }
 }

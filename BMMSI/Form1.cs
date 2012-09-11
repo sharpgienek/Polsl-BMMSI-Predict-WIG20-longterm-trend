@@ -181,14 +181,22 @@ namespace BMMSI
         /// <param name="e">asdf.</param>
         private void button5_Click(object sender, EventArgs e)//todo nazwa metody.
         {
-            List<TrendDirectionWithPropability> results = new List<TrendDirectionWithPropability>();
+            PredictionResult results;
             if (folderBrowserDialogNetwork.ShowDialog() == DialogResult.OK)
             {
                 results = MainControler.Instance.PredictTrendDirection(this.dateTimePicker1.Value, folderBrowserDialogNetwork.SelectedPath);
-                MessageBox.Show("Prediction for " + this.dateTimePicker1.Value.ToShortDateString() + "\n" + results[0].Direction.ToString() + " " +
-                   results[0].Propability.ToString() + "\n" + results[1].Direction.ToString() + " " +
-                   results[1].Propability.ToString() + "\n" + results[2].Direction.ToString() + " " +
-                   results[2].Propability.ToString());
+                if (results == null)
+                    MessageBox.Show("Error with selected network has occured. Please try to create this network again or check if correct folder was picked");
+                else
+                {
+                    MessageBox.Show("Prediction for " + this.dateTimePicker1.Value.ToShortDateString() + "\n\n" + results.Trends[0].Direction.ToString() + " " +
+                       results.Trends[0].Propability.ToString() + "\n" + results.Trends[1].Direction.ToString() + " " +
+                       results.Trends[1].Propability.ToString() + "\n" + results.Trends[2].Direction.ToString() + " " +
+                       results.Trends[2].Propability.ToString() + "\n\nUsed network parameters: \n\n" +
+                       "Period number: " + results.PeriodNo.ToString() + "\n" + "Patterns number: " + results.PatternsNo.ToString() + "\n" +
+                       "Hidden layer neuron count: " + results.NeuronNo.ToString() + "\n" + "Epochs number: " + results.EpochsNo.ToString() + "\n" +
+                       "MSE: " + results.MSE.ToString());
+                }
             }
         }
 

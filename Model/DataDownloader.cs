@@ -143,6 +143,7 @@ namespace Model
         private DataDownloader()
         {
             this.DataDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
+            Directory.CreateDirectory(this.DataDirectory);
         }
         
         public void DownloadData()

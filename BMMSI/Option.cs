@@ -22,31 +22,31 @@ namespace BMMSI
 
             string currentPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             textBoxTrainigPath.Text = currentPath + "\\training data\\";
-            textBoxTrainingMinPeriod.Text = (6).ToString();
-            textBoxTrainingMaxPeriod.Text = (20).ToString();
-            textBoxTrainingPeriodStep.Text = (1).ToString();
+            textBoxTrainingMinPeriod.Text = (10).ToString();
+            textBoxTrainingMaxPeriod.Text = (30).ToString();
+            textBoxTrainingPeriodStep.Text = (2).ToString();
             textBoxMinPattern.Text = (10).ToString();
             textBoxMaxPattern.Text = (200).ToString();
             textBoxPatternStep.Text = (10).ToString();
-            dateTimePickerTrain.Value = MainControler.Instance.GetNextExchangeQuotationDate(new DateTime(2012, 8, 24), 0);
-            textBoxTrainDateStep.Text = (2).ToString();
+            dateTimePickerTrain.Value = MainControler.Instance.GetNextExchangeQuotationDate(new DateTime(2009, 11, 19), 0);
+            textBoxTrainDateStep.Text = (6).ToString();
 
             textBoxTestPath.Text = currentPath + "\\test data\\";
-            textBoxTestMinPeriodNo.Text = (6).ToString();
-            textBoxTestMaxPeriodNo.Text = (20).ToString();
-            textBoxTestPeriodStep.Text = (1).ToString();
+            textBoxTestMinPeriodNo.Text = (10).ToString();
+            textBoxTestMaxPeriodNo.Text = (30).ToString();
+            textBoxTestPeriodStep.Text = (2).ToString();
             textBoxDesiredPatNo.Text = (100).ToString();
-            dateTimePickerTest.Value  = MainControler.Instance.GetNextExchangeQuotationDate(new DateTime(2012, 8, 24), -1);
-            textBoxTestDateStep.Text = (2).ToString();
+            dateTimePickerTest.Value  = MainControler.Instance.GetNextExchangeQuotationDate(new DateTime(2010, 9, 3), 0);
+            textBoxTestDateStep.Text = (13).ToString();
 
             textBoxNetPath.Text = "networks\\";
             textBoxMaxEpochs.Text = (10000).ToString();
             textBoxMinEpochs.Text = (10).ToString();
             textBoxEpochsStep.Text = (10).ToString();
-            textBoxMinHidden.Text = (0.2).ToString();
+            textBoxMinHidden.Text = (0.5).ToString();
             textBoxMaxHidden.Text = (1.2).ToString();
-            textBoxHiddenStep.Text = (0.05).ToString();
-            textBoxMSE.Text = (0.052).ToString();
+            textBoxHiddenStep.Text = (0.1).ToString();
+            textBoxMSE.Text = (0.04).ToString();
 
             textBoxThreads.Text = (6).ToString();
 
@@ -143,8 +143,9 @@ namespace BMMSI
 
         private void buttonSave_Click(object sender, EventArgs e)
         {
-            MainControler.Instance.CreateNewNeuralNets(CreateOptionDataFromForm());
             MainControler.Instance.MaxComputingThreads = int.Parse(textBoxThreads.Text);
+            MainControler.Instance.CreateNewNeuralNets(CreateOptionDataFromForm());
+            
             Close();
         }
 

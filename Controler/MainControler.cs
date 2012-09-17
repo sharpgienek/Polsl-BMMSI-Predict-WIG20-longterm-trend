@@ -304,7 +304,8 @@ namespace Controler
             foreach (string testFile in testFiles)
             {
                 TrainingData td = new TrainingData();
-                if (td.ReadTrainFromFile(testDataFolder + "\\" + Path.GetFileName(testFile)))
+                //if (td.ReadTrainFromFile(testDataFolder + "\\" + Path.GetFileName(testFile)))
+                if (td.ReadTrainFromFile(testFile))
                 {
                     testDataList.Add(td);
                 }
@@ -599,7 +600,7 @@ namespace Controler
         private TrendDirection GetTrendDirection(List<ExchangePeriod> periodList, int beginIndex)
         {
             double change = (periodList[beginIndex + 2].CloseRate - periodList[beginIndex].OpenRate) / periodList[beginIndex].OpenRate;
-            if (change > 0.3 || change < 0.3)
+            if (change > 0.03 || change < 0.03)
             {
                 if ((periodList[beginIndex].OpenRate < periodList[beginIndex + 1].CloseRate) && (periodList[beginIndex].CloseRate < periodList[beginIndex + 2].CloseRate))
                 {
@@ -701,6 +702,115 @@ namespace Controler
         public DateTime GetNextExchangeQuotationDate(DateTime baseExchangeQuotationDate, int offset)
         {
             return DataProvider.Instance.GetNextExchangeQuotationDate(baseExchangeQuotationDate, offset);
+        }
+
+        struct Trend
+        {
+            public uint count;
+            public double avgUp;
+            public double avgDown;
+            public double avgSide;
+        }
+
+        public void TestNet()
+        {
+            StringReader reader;
+
+            try
+            {
+                reader = new StringReader(File.ReadAllText(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\networks\\LowestMSENetwork.xml"));
+            }
+            catch
+            {
+                return;
+            }
+            XmlSerializer serializer = new XmlSerializer(typeof(NetworkMSE));
+            NetworkMSE lowesMSE = (NetworkMSE)serializer.Deserialize(reader);
+            NeuralNet net = new NeuralNet();
+            if (!net.CreateFromFile("networks\\" + lowesMSE.NetworkFileName))
+            {
+                return;
+            }
+            uint numberOfInputs = net.GetNumInput();
+            uint numberOfPeriods = (numberOfInputs + 1) / 2;
+            DateTime date = new DateTime(2011, 1, 1);
+            date = DataProvider.Instance.GetNextExchangeQuotationDate(date, 0);
+            DateTime endDate = new DateTime(2011, 3 ,15);
+            Trend up = new Trend(), down = new Trend(), side = new Trend();
+            while (date < endDate)
+            {
+                List<ExchangePeriod> periods = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromEndDate((int)numberOfPeriods, date, this.firstExchangeQuotationDate, 7);
+                List<ExchangePeriod> testPeriods = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromStartDate((int)numberOfPeriods, DataProvider.Instance.GetNextExchangeQuotationDate(DateTime.Now, 0), date, 7);
+                TrendDirection truTrend = GetTrendDirection(testPeriods, 0);
+                double[] inputs = new double[numberOfInputs];
+                for (int i = 0; i < numberOfPeriods; i += 2)
+                {
+                    inputs[i] = periods[i].PercentageChange;
+                    if (i + 1 < periods.Count)
+                    {
+                        inputs[i + 1] = (periods[i + 1].PublicTrading - periods[i].PublicTrading) / periods[i].PublicTrading;
+                    }
+                }
+                double[] result = net.Run(inputs);
+                double sum = 0;
+                foreach (double r in result)
+                {
+                    if (r > 0)
+                    {
+                        sum += r;
+                    }
+                }
+
+                for (int i = 0; i < result.Length; i++)
+                {
+                    TrendDirectionWithPropability td = new TrendDirectionWithPropability();
+                    if (result[i] > 0)
+                    {
+                        result[i] = result[i] * 100 / sum;
+                    }
+                    else
+                    {
+                        result[i] = 0;
+                    }
+                }
+                switch (truTrend)
+                {
+                    case TrendDirection.Down:
+                        down.count++;
+                        down.avgDown += result[0];
+                        down.avgSide += result[1];
+                        down.avgUp += result[2];
+                        break;
+                    case TrendDirection.Sideways:
+                        side.count++;
+                        side.avgDown += result[0];
+                        side.avgSide += result[1];
+                        side.avgUp += result[2];
+                        break;
+                    case TrendDirection.Up:
+                        up.count++;
+                        up.avgDown += result[0];
+                        up.avgSide += result[1];
+                        up.avgUp += result[2];
+                        break;
+                }
+                date = DataProvider.Instance.GetNextExchangeQuotationDate(date, 1);
+            }
+            down.avgUp = down.avgUp/(double) down.count;
+            down.avgDown = down.avgDown/(double) down.count;
+            down.avgSide = down.avgUp / (double)down.count;
+            up.avgUp = up.avgUp / (double)up.count;
+            up.avgDown = up.avgDown / (double)up.count;
+            up.avgSide = up.avgUp / (double)up.count;
+            side.avgUp = side.avgUp / (double)side.count;
+            side.avgDown = side.avgDown / (double)side.count;
+            side.avgSide = side.avgUp / (double)side.count;
+            List<string> fileContent = new List<string>();
+            fileContent.Add("Trend Name \t Sample Count \t Up \t Side \t Down ");
+            fileContent.Add(TrendDirection.Up.ToString() + " \t " + up.count.ToString() + " \t " + up.avgUp.ToString() + " \t " + up.avgSide.ToString() + " \t " + up.avgDown.ToString());
+            fileContent.Add(TrendDirection.Sideways.ToString() + " \t " + side.count.ToString() + " \t " + side.avgUp.ToString() + " \t " + side.avgSide.ToString() + " \t " + side.avgDown.ToString());
+            fileContent.Add(TrendDirection.Down.ToString() + " \t " + down.count.ToString() + " \t " + down.avgUp.ToString() + " \t " + down.avgSide.ToString() + " \t " + down.avgDown.ToString());
+            File.AppendAllLines(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\test result.txt", fileContent);
         }
     }
 }

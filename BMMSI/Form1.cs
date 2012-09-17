@@ -66,6 +66,7 @@ namespace BMMSI
                 {
                     this.button1.BeginInvoke((Action)(() => this.button1.Enabled = true));
                     this.button5.BeginInvoke((Action)(() => this.button5.Enabled = true));
+                    MainControler.Instance.TestNet();
                 };
 
             MainControler.Instance.MaxComputingThreads = 6;

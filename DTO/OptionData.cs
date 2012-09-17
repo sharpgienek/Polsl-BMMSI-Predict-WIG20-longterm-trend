@@ -40,6 +40,8 @@ namespace DTO
         {
             get
             {
+                if (MaxEpochsMultiplierStep <= 0.0f || TrainingPatternsStep <= 0 || TrainingPeriodsStep <= 0 || HiddenLayersMultiplierStep <= 0)
+                    return 0;
                 int number = 0;
                 for (int i = TrainingMinNumberOfPeriods; i <= TrainingMaxNumberOfPeriods; i += TrainingPeriodsStep)
                 {

@@ -798,13 +798,13 @@ namespace Controler
             }
             down.avgUp = down.avgUp/(double) down.count;
             down.avgDown = down.avgDown/(double) down.count;
-            down.avgSide = down.avgUp / (double)down.count;
+            down.avgSide = down.avgSide / (double)down.count;
             up.avgUp = up.avgUp / (double)up.count;
             up.avgDown = up.avgDown / (double)up.count;
-            up.avgSide = up.avgUp / (double)up.count;
+            up.avgSide = up.avgSide / (double)up.count;
             side.avgUp = side.avgUp / (double)side.count;
             side.avgDown = side.avgDown / (double)side.count;
-            side.avgSide = side.avgUp / (double)side.count;
+            side.avgSide = side.avgSide / (double)side.count;
             List<string> fileContent = new List<string>();
             fileContent.Add("Trend Name \t Sample Count \t Up \t Side \t Down ");
             fileContent.Add(TrendDirection.Up.ToString() + " \t " + up.count.ToString() + " \t " + up.avgUp.ToString() + " \t " + up.avgSide.ToString() + " \t " + up.avgDown.ToString());

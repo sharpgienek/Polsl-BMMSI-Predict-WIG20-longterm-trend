@@ -349,7 +349,7 @@ namespace Controler
                             {
                                 NeuralNetworkParameters usedParameters = parameters.First();
                                 parameters.RemoveAt(0);
-                                if (!File.Exists(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + path + usedParameters.FileName))
+                                if (!File.Exists(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\" + path + usedParameters.FileName))
                                 {
                                     NeuralNet net = new NeuralNet();
                                     List<uint> layers = new List<uint>();

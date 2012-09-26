@@ -158,7 +158,6 @@ namespace Controler
         /// <summary>
         /// Metoda inicjalizacji.
         /// </summary>
-
         public void Initialize()
         {
             this.InitializationProgress = 0;
@@ -175,13 +174,15 @@ namespace Controler
             downloadThread.Start();
         }
 
+        /// <summary>
+        /// Metoda tworzenia nowych sieci neuronowych.
+        /// </summary>
+        /// <param name="option">Opcje tworzenia nowych sieci neuronowych</param>
         public void CreateNewNeuralNets(OptionData option)
         {
             this.InitializationProgress = 0;
             int numberOfSteps = 3;
             int currentStep = 1;
-            //this.InitializationProgress = (double)currentStep * 100 / numberOfSteps;
-            //currentStep++;
             Task t = new Task((Action)(
                     () =>
                     {
@@ -315,7 +316,7 @@ namespace Controler
             foreach (TrainingDataFileParameters file in fileList)
             {
                 TrainingData td = new TrainingData();
-                if (td.ReadTrainFromFile(trainDataFolder + "\\" + file.FileName))
+                if (td.ReadTrainFromFile(trainDataFolder.Split('\\').Last() + "\\" + file.FileName))
                 {
                     trainingDataList.Add(td);
                 }
@@ -408,6 +409,16 @@ namespace Controler
             }
         }
 
+        /// <summary>
+        /// Metoda generowania danych testowych.
+        /// </summary>
+        /// <param name="dataPath">Ścieżka danych testowych.</param>
+        /// <param name="minNumberOfPeriods">Minimalna liczba okresów</param>
+        /// <param name="maxNumberOfPeriods">Maksymalna liczba okresów</param>
+        /// <param name="periodsStep">Krok pomiędzy kolejną liczbą okresów zaczynając od minimalnej.</param>
+        /// <param name="desiredNumberOfPatterns">Liczba wzorców, które chcielibyśmy uzyskać.</param>
+        /// <param name="patternsSearchStartDate">Data pierwsza data kluczowa wzorców.</param>
+        /// <param name="exchangeDaysStep">Krok pomiędzy kolejnymi datami kluczowymi podany w liczbie dni.</param>
         private void GenerateTestData(
             string dataPath,
             int minNumberOfPeriods,
@@ -436,14 +447,14 @@ namespace Controler
                 {
                     while ((addedPatterns < desiredNumberOfPatterns) && (patternDate > firstExchangeQuotationDate))
                     {
-                        List<ExchangePeriod> historicalData = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromEndDate(i, patternDate, firstExchangeQuotationDate, 7);
+                        List<ExchangePeriod> historicalData = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromEndDate(i, patternDate, firstExchangeQuotationDate, 1);
                         if (historicalData.Count != i)
                         {
                             patternDate = DataProvider.Instance.GetNextExchangeQuotationDate(patternDate, -exchangeDaysStep);
                             continue;
                         }
 
-                        List<ExchangePeriod> resultData = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromStartDate(3, DateTime.Today, patternDate, 7);
+                        List<ExchangePeriod> resultData = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromStartDate(3, DateTime.Today, patternDate, 1);
                         if (resultData.Count != 3)
                         {
                             patternDate = DataProvider.Instance.GetNextExchangeQuotationDate(patternDate, -exchangeDaysStep);
@@ -500,6 +511,18 @@ namespace Controler
             }
         }
 
+        /// <summary>
+        /// Metoda generowania danych treningowych.
+        /// </summary>
+        /// <param name="dataPath">Ścieżka danych treningowych.</param>
+        /// <param name="minNumberOfPeriods">Minimalna liczba okresów.</param>
+        /// <param name="maxNumberOfPeriods">Maksymalna liczba okresów.</param>
+        /// <param name="periodsStep">Krok pomiędzy kolejną liczbą okresów zaczynając od minimalnej liczby okresów.</param>
+        /// <param name="minTrainingPatterns">Minimalna liczba wzorców treningowych.</param>
+        /// <param name="maxTrainingPatterns">Maksymalna liczba wzorców treningowych.</param>
+        /// <param name="trainingPatternsStep">Krok pomiędzy kolejną liczbą wzorców treningowych zaczynając od liczby minimalnej.</param>
+        /// <param name="patternsSearchStartDate">Pierwsza data kluczowa dla wzorców.</param>
+        /// <param name="exchangeDaysStep">Krok pomiędzy kolejnymi datami kluczowymi dla wzorców podany w dniach.</param>
         private void GenerateTrainingData(
             string dataPath,
             int minNumberOfPeriods,
@@ -532,14 +555,14 @@ namespace Controler
                     {
                         while ((addedPatterns < j) && (patternDate > firstExchangeQuotationDate))
                         {
-                            List<ExchangePeriod> historicalData = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromEndDate(i, patternDate, firstExchangeQuotationDate, 7);
+                            List<ExchangePeriod> historicalData = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromEndDate(i, patternDate, firstExchangeQuotationDate, 1);
                             if (historicalData.Count != i)
                             {
                                 patternDate = DataProvider.Instance.GetNextExchangeQuotationDate(patternDate, -exchangeDaysStep);
                                 continue;
                             }
 
-                            List<ExchangePeriod> resultData = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromStartDate(3, DateTime.Today, patternDate, 7);
+                            List<ExchangePeriod> resultData = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromStartDate(3, DateTime.Today, patternDate, 1);
                             if (resultData.Count != 3)
                             {
                                 patternDate = DataProvider.Instance.GetNextExchangeQuotationDate(patternDate, -exchangeDaysStep);
@@ -597,6 +620,12 @@ namespace Controler
             }
         }
 
+        /// <summary>
+        /// Metoda zwracająca kierunek trendu.
+        /// </summary>
+        /// <param name="periodList">Lista okresów na podstawie których określany jest trend. Potrzebne minimum 3.</param>
+        /// <param name="beginIndex">Index w liście od którego ma zostać określony trend.</param>
+        /// <returns>Kierunek trendu.</returns>
         private TrendDirection GetTrendDirection(List<ExchangePeriod> periodList, int beginIndex)
         {
             double change = (periodList[beginIndex + 2].CloseRate - periodList[beginIndex].OpenRate) / periodList[beginIndex].OpenRate;
@@ -616,6 +645,12 @@ namespace Controler
             return TrendDirection.Sideways;
         }
 
+        /// <summary>
+        /// Metoda przewidująca kierunek trendu na podstawie najlepszej znalezionej sieci neuronowej.
+        /// </summary>
+        /// <param name="date">Data dla której ma się odbyć przewidywanie.</param>
+        /// <param name="path">Ścieżka do folderu zawierającego sieci neuronowe.</param>
+        /// <returns>Wyniki przewidywania.</returns>
         public PredictionResult PredictTrendDirection(DateTime date, string path)
         {
             path = Path.GetFileName(path);
@@ -637,7 +672,7 @@ namespace Controler
             }
             uint numberOfInputs = net.GetNumInput();
             uint numberOfPeriods = (numberOfInputs + 1) / 2;
-            List<ExchangePeriod> periods = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromEndDate((int)numberOfPeriods, date, this.firstExchangeQuotationDate, 7);
+            List<ExchangePeriod> periods = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromEndDate((int)numberOfPeriods, date, this.firstExchangeQuotationDate, 1);
             double[] inputs = new double[numberOfInputs];
             for (int i = 0; i < numberOfPeriods; i += 2)
             {
@@ -699,11 +734,20 @@ namespace Controler
 
         }
 
+        /// <summary>
+        /// Metoda zwracająca kolejną datę notowania względem podanej daty o podanej liczbie porządkowej.
+        /// </summary>
+        /// <param name="baseExchangeQuotationDate">Data względem której szukamy kolejnej daty notowania.</param>
+        /// <param name="offset">Liczba określająca która z kolei data ma być zwrócona.</param>
+        /// <returns>Kolejna data notowania.</returns>
         public DateTime GetNextExchangeQuotationDate(DateTime baseExchangeQuotationDate, int offset)
         {
             return DataProvider.Instance.GetNextExchangeQuotationDate(baseExchangeQuotationDate, offset);
         }
 
+        /// <summary>
+        /// Struktura określająca parametry przewidywań. Wykorzystywana w metodzie testującej sieć.
+        /// </summary>
         struct Trend
         {
             public uint count;
@@ -712,6 +756,9 @@ namespace Controler
             public double avgSide;
         }
 
+        /// <summary>
+        /// Metoda testująca znalezioną najlepszą sieć neuronową.
+        /// </summary>
         public void TestNet()
         {
             StringReader reader;
@@ -733,14 +780,21 @@ namespace Controler
             }
             uint numberOfInputs = net.GetNumInput();
             uint numberOfPeriods = (numberOfInputs + 1) / 2;
-            DateTime date = new DateTime(2011, 1, 1);
+            DateTime date = new DateTime(2009, 12, 13);
+            DateTime iterationDate = date;
             date = DataProvider.Instance.GetNextExchangeQuotationDate(date, 0);
-            DateTime endDate = new DateTime(2011, 3 ,15);
+            DateTime endDate = new DateTime(2011, 12 , 13);
             Trend up = new Trend(), down = new Trend(), side = new Trend();
-            while (date < endDate)
+            int predictionDownCount = 0;
+            int predictionSidewaysCount = 0;
+            int predictionUpCount = 0;
+            int predictionDownTrue = 0;
+            int predictionSidewaysTrue = 0;
+            int predictionUpTrue = 0;
+            while (date <= endDate)
             {
-                List<ExchangePeriod> periods = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromEndDate((int)numberOfPeriods, date, this.firstExchangeQuotationDate, 7);
-                List<ExchangePeriod> testPeriods = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromStartDate((int)numberOfPeriods, DataProvider.Instance.GetNextExchangeQuotationDate(DateTime.Now, 0), date, 7);
+                List<ExchangePeriod> periods = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromEndDate((int)numberOfPeriods, date, this.firstExchangeQuotationDate, 1);
+                List<ExchangePeriod> testPeriods = DataProvider.Instance.GetExchangePeriodsMergedByMovementDirectoryFromStartDate((int)numberOfPeriods, DataProvider.Instance.GetNextExchangeQuotationDate(DateTime.Now, 0), date, 1);
                 TrendDirection truTrend = GetTrendDirection(testPeriods, 0);
                 double[] inputs = new double[numberOfInputs];
                 for (int i = 0; i < numberOfPeriods; i += 2)
@@ -773,6 +827,33 @@ namespace Controler
                         result[i] = 0;
                     }
                 }
+
+                switch (result.ToList().IndexOf(result.Max()))
+                {
+                    case 0:
+                        predictionDownCount++;
+                        if (truTrend == TrendDirection.Down)
+                        {
+                            predictionDownTrue++;
+                        }
+                        break;
+                    case 1:
+                        predictionSidewaysCount++;
+                        if (truTrend == TrendDirection.Sideways)
+                        {
+                            predictionSidewaysTrue++;
+                        }
+                        break;
+                    case 2:
+                        predictionUpCount++;
+                        if (truTrend == TrendDirection.Up)
+                        {
+                            predictionUpTrue++;
+                        }
+                        break;
+                }
+
+
                 switch (truTrend)
                 {
                     case TrendDirection.Down:
@@ -794,6 +875,9 @@ namespace Controler
                         up.avgUp += result[2];
                         break;
                 }
+
+              //  iterationDate = iterationDate.AddDays(7);
+              //  date = DataProvider.Instance.GetNextExchangeQuotationDate(iterationDate, 0);
                 date = DataProvider.Instance.GetNextExchangeQuotationDate(date, 1);
             }
             down.avgUp = down.avgUp/(double) down.count;
@@ -810,6 +894,11 @@ namespace Controler
             fileContent.Add(TrendDirection.Up.ToString() + " \t " + up.count.ToString() + " \t " + up.avgUp.ToString() + " \t " + up.avgSide.ToString() + " \t " + up.avgDown.ToString());
             fileContent.Add(TrendDirection.Sideways.ToString() + " \t " + side.count.ToString() + " \t " + side.avgUp.ToString() + " \t " + side.avgSide.ToString() + " \t " + side.avgDown.ToString());
             fileContent.Add(TrendDirection.Down.ToString() + " \t " + down.count.ToString() + " \t " + down.avgUp.ToString() + " \t " + down.avgSide.ToString() + " \t " + down.avgDown.ToString());
+            fileContent.Add("");
+            fileContent.Add(TrendDirection.Up.ToString() + " \t " + (predictionUpTrue/(double)predictionUpCount).ToString());
+            fileContent.Add(TrendDirection.Sideways.ToString() + " \t " + (predictionSidewaysTrue / (double)predictionSidewaysCount).ToString());
+            fileContent.Add(TrendDirection.Down.ToString() + " \t " + (predictionDownTrue / (double)predictionDownCount).ToString());
+            fileContent.Add("");
             File.AppendAllLines(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\test result.txt", fileContent);
         }
     }

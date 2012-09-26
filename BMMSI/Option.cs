@@ -14,8 +14,14 @@ using Controler;
 
 namespace BMMSI
 {
+    /// <summary>
+    /// Klasa reprezentująca formularz tworzenia nowych sieci.
+    /// </summary>
     public partial class Option : Form
     {
+        /// <summary>
+        /// Konstruktor.
+        /// </summary>
         public Option()
         {
             InitializeComponent();
@@ -70,14 +76,23 @@ namespace BMMSI
             textBoxTrainingPeriodStep.Validating += validateIntegerTextBox;
             textBoxMSE.Validating += validateDoubleTextBox;
             textBoxThreads.Validating += validateIntegerTextBox;
-            //labelCreateNetwork.Text = ((int) 4 * (1.2 - 0.2) / 0.05).ToString();
         }
 
+        /// <summary>
+        /// Metoda obsługi guzika Cancel.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void buttonCancel_Click(object sender, EventArgs e)
         {
             Close();
         }
 
+        /// <summary>
+        /// Metoda sprawdzająca, czy dane wprowadzone do textBox'a są wartością liczbową typu int.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void validateIntegerTextBox(object sender, CancelEventArgs e)
         {
             TextBox text = (TextBox) sender;
@@ -90,6 +105,11 @@ namespace BMMSI
             }
         }
 
+        /// <summary>
+        /// Metoda sprawdzająca, czy dane wprowadzone do textBox'a są wartością liczbową typu double.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void validateDoubleTextBox(object sender, CancelEventArgs e)
         {
             TextBox text = (TextBox)sender;
@@ -102,6 +122,10 @@ namespace BMMSI
             }
         }
 
+        /// <summary>
+        /// Metoda tworzenia obiektu opcji tworzenia sieci na podstawie danych wprowadzonych do formularza.
+        /// </summary>
+        /// <returns>Obiekt opcji tworzenia sieci.</returns>
         private OptionData CreateOptionDataFromForm()
         {
             OptionData option = new OptionData();
@@ -141,6 +165,11 @@ namespace BMMSI
             }
         }
 
+        /// <summary>
+        /// Metoda obsługi guzika zapisania.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void buttonSave_Click(object sender, EventArgs e)
         {
             MainControler.Instance.MaxComputingThreads = int.Parse(textBoxThreads.Text);

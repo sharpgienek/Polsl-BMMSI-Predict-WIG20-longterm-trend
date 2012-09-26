@@ -11,10 +11,16 @@ using System.Diagnostics;
 
 namespace Model
 {
+    /// <summary>
+    /// Singleton dający dostęp do danych.
+    /// </summary>
     public class DataProvider
     {
         private static DataProvider instance;
 
+        /// <summary>
+        /// Instancja singletona.
+        /// </summary>
         public static DataProvider Instance
         {
             get
@@ -30,12 +36,18 @@ namespace Model
 
         private List<ExchangeDay> exchangeDays;
 
+        /// <summary>
+        /// Prywatny konstruktor.
+        /// </summary>
         private DataProvider()
         {
-           // InitializeExchangeDaysFromXls();
             InitializeExchangeDays();
         }
 
+        /// <summary>
+        /// Metoda zapisywania danych historycznych do pliku xml.
+        /// </summary>
+        /// <param name="path">Ścieżda pliku.</param>
         private void SaveExchangeDays(string path)
         {
             StringWriter writer = new StringWriter();
@@ -46,6 +58,10 @@ namespace Model
             File.WriteAllText(path, writer.ToString());
         }
 
+        /// <summary>
+        /// Metoda pobierania danych historycznych z plików xls.
+        /// </summary>
+        /// <returns>Lista danych historycznych.</returns>
         private List<ExchangeDay> GetExchangeDaysFromXls()
         {
             this.exchangeDays = new List<ExchangeDay>();
@@ -68,6 +84,9 @@ namespace Model
             return null;
         }
 
+        /// <summary>
+        /// Metoda inicjalizacji listy danych historycznych.
+        /// </summary>
         private void InitializeExchangeDays()
         {
             this.exchangeDays = GetExchangeDaysFromXml(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\exchange days.xml");
@@ -107,6 +126,11 @@ namespace Model
             }
         }
 
+        /// <summary>
+        /// Metoda zczytująca dane historyczne z pliku xml.
+        /// </summary>
+        /// <param name="path">Ścieżka pliku.</param>
+        /// <returns>Lista danych historycznych.</returns>
         private List<ExchangeDay> GetExchangeDaysFromXml(string path)
         {
             try
@@ -122,6 +146,12 @@ namespace Model
             }
         }
 
+        /// <summary>
+        /// Metoda zwracająca okres notowań.
+        /// </summary>
+        /// <param name="startDate">Data poczatku okresu.</param>
+        /// <param name="endDate">Data końca okresu.</param>
+        /// <returns>Okres notowań.</returns>
         public ExchangePeriod GetExchangePeriod(DateTime startDate, DateTime endDate)
         {
             DateTime checkedDate = startDate.Date;
@@ -153,11 +183,21 @@ namespace Model
             return result;
         }
 
+        /// <summary>
+        /// Metoda pobierająca dane historyczne dla danej daty.
+        /// </summary>
+        /// <param name="date">Data.</param>
+        /// <returns>Dane historyczne.</returns>
         public ExchangeDay GetExchangeDay(DateTime date)
         {
             return this.exchangeDays.SingleOrDefault(d => d.Date == date);
         }
 
+        /// <summary>
+        /// Metoda pobierająca dane historyczne dla danej daty z pliku xls.
+        /// </summary>
+        /// <param name="date">Data.</param>
+        /// <returns>Dane historyczne.</returns>
         private static ExchangeDay GetExchangeDayFromXls(DateTime date)
         {
             string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
@@ -207,6 +247,11 @@ namespace Model
             return null;
         }
 
+        /// <summary>
+        /// Metoda zwracająca obroty dla danej daty. Zczytuje je z pliku xls.
+        /// </summary>
+        /// <param name="date">Data.</param>
+        /// <returns>Obroty.</returns>
         private double GetPublicTrading(DateTime date)
         {
             string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
@@ -235,6 +280,14 @@ namespace Model
             }
         }
 
+        /// <summary>
+        /// Metoda zwracająca listę okresów notowań połączonych, jeżeli mają ten sam kierunek trendu. Metoda ta rozpoczyna wyznaczanie od parametru periodsEndDate i zmierza ku przeszłości.
+        /// </summary>
+        /// <param name="DesiredNumberOfPeriods">Oczekiwana liczba okresów.</param>
+        /// <param name="periodsEndDate">Ostatnia data okresów.</param>
+        /// <param name="periodsStartDate">Data będąca granicą wyznaczania kolejnych okresów.</param>
+        /// <param name="daysInterval">Liczba określająca długość okresu w dniach.</param>
+        /// <returns>Lista okresów notowań połaczonych, jeżeli mają ten sam kierunek trendu.</returns>
         public List<ExchangePeriod> GetExchangePeriodsMergedByMovementDirectoryFromEndDate(int DesiredNumberOfPeriods, DateTime periodsEndDate, DateTime periodsStartDate, int daysInterval)
         {
             DateTime iterationDate = periodsEndDate.Date;
@@ -302,6 +355,14 @@ namespace Model
             return periodList;
         }
 
+        /// <summary>
+        /// Metoda zwracająca listę okresów notowań połączonych, jeżeli mają ten sam kierunek trendu. Metoda ta rozpoczyna wyznaczanie od parametru periodsStartDate i zmierza ku teraźniejszości.
+        /// </summary>
+        /// <param name="DesiredNumberOfPeriods">Oczekiwana liczba okresów.</param>
+        /// <param name="periodsEndDate">Data będąda granicą wyznaczania kolejnych okresów.</param>
+        /// <param name="periodsStartDate">Data początku okresów.</param>
+        /// <param name="daysInterval">Liczba określająca długość okresu w dniach.</param>
+        /// <returns>Lista okresów notowań połaczonych, jeżeli mają ten sam kierunek trendu.</returns>
         public List<ExchangePeriod> GetExchangePeriodsMergedByMovementDirectoryFromStartDate(int DesiredNumberOfPeriods, DateTime periodsEndDate, DateTime periodsStartDate, int daysInterval)
         {
             DateTime iterationDate = periodsStartDate.Date;
@@ -361,6 +422,12 @@ namespace Model
             return periodList;
         }
 
+        /// <summary>
+        /// Metoda zwracająca kolejną datę notowania względem podanej daty o podanej liczbie porządkowej.
+        /// </summary>
+        /// <param name="baseExchangeQuotationDate">Data względem której szukamy kolejnej daty notowania.</param>
+        /// <param name="offset">Liczba określająca która z kolei data ma być zwrócona.</param>
+        /// <returns>Kolejna data notowania.</returns>
         public DateTime GetNextExchangeQuotationDate(DateTime baseExchangeQuotationDate, int offset)
         {
             DataDownloader downloader = DataDownloader.Instance;
@@ -389,6 +456,11 @@ namespace Model
             }
         }
 
+        /// <summary>
+        /// Metoda zwracająca listę parametrów wyczytanych z nazw plików dla katalogu danych treningowych.
+        /// </summary>
+        /// <param name="trainingDataDirectoryPath">Ścieżka katalogu danych treningowych.</param>
+        /// <returns>Lista parametrów wyczytanych z nazw plików dla katalogu danych treningowych.</returns>
         public List<TrainingDataFileParameters> GetTrainingDataFilesParameters(string trainingDataDirectoryPath)
         {
             List<TrainingDataFileParameters> result = new List<TrainingDataFileParameters>();
@@ -417,6 +489,11 @@ namespace Model
             return result;
         }
 
+        /// <summary>
+        /// Metoda zczytująca parametry sieci z nazwy pliku.
+        /// </summary>
+        /// <param name="fileName">Nazwa pliku.</param>
+        /// <returns>Tablica z parametrami sieci.</returns>
         public int[] GetNetParametersFromFile(string fileName)
         {
             int[] result = new int[4];

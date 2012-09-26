@@ -5,6 +5,9 @@ using System.Text;
 
 namespace DTO
 {
+    /// <summary>
+    /// Enum reprezentujacy kierunek trendu.
+    /// </summary>
     public enum TrendDirection
     {
         Down = -1,

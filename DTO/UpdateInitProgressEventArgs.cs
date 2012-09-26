@@ -5,12 +5,21 @@ using System.Text;
 
 namespace DTO
 {
+    /// <summary>
+    /// Klasa reprezentująca argumenty zdarzenia zmiany postępu inicjalizacji.
+    /// </summary>
     public class UpdateInitProgressEventArgs : EventArgs
     {
+        /// <summary>
+        /// Stan.
+        /// </summary>
         public string Status { get; set; }
 
         private double progress;
 
+        /// <summary>
+        /// Procentowa wartość postępu.
+        /// </summary>
         public double Progress
         {
             get

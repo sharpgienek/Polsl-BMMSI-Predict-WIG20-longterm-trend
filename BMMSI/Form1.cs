@@ -18,16 +18,16 @@ namespace BMMSI
     /// <summary>
     /// Główny formularz programu.
     /// </summary>
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
         /// <summary>
         /// Konstruktor.
         /// </summary>
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
-            button1.Enabled = false;
-            button5.Enabled = false;
+            buttonFindBestNeuralNet.Enabled = false;
+            buttonPredict.Enabled = false;
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace BMMSI
                 {
                     try
                     {
-                        progressBar1.BeginInvoke((Action)(() => progressBar1.Value = (int)(eArgs.Progress)));
+                        progressBar.BeginInvoke((Action)(() => progressBar.Value = (int)(eArgs.Progress)));
                     }
                     catch
                     {
@@ -64,8 +64,8 @@ namespace BMMSI
             MainControler.Instance.InitializationComplete +=
                 (s, eArgs) =>
                 {
-                    this.button1.BeginInvoke((Action)(() => this.button1.Enabled = true));
-                    this.button5.BeginInvoke((Action)(() => this.button5.Enabled = true));
+                    this.buttonFindBestNeuralNet.BeginInvoke((Action)(() => this.buttonFindBestNeuralNet.Enabled = true));
+                    this.buttonPredict.BeginInvoke((Action)(() => this.buttonPredict.Enabled = true));
                     MainControler.Instance.TestNet();
                 };
 
@@ -73,17 +73,22 @@ namespace BMMSI
             Task t = Task.Factory.StartNew((Action)MainControler.Instance.Initialize);
         }
 
-        private void button5_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Metoda obsługi kliknięcia guzika przewidywania.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void buttonPredict_Click(object sender, EventArgs e)
         {
             PredictionResult results;
             if (folderBrowserDialogNetwork.ShowDialog() == DialogResult.OK)
             {
-                results = MainControler.Instance.PredictTrendDirection(this.dateTimePicker1.Value, folderBrowserDialogNetwork.SelectedPath);
+                results = MainControler.Instance.PredictTrendDirection(this.dateTimePickerPredictionDate.Value, folderBrowserDialogNetwork.SelectedPath);
                 if (results == null)
                     MessageBox.Show("Error with selected network has occured. Please try to create this network again or check if correct folder was picked");
                 else
                 {
-                    MessageBox.Show("Prediction for " + this.dateTimePicker1.Value.ToShortDateString() + "\n\n" + results.Trends[0].Direction.ToString() + " " +
+                    MessageBox.Show("Prediction for " + this.dateTimePickerPredictionDate.Value.ToShortDateString() + "\n\n" + results.Trends[0].Direction.ToString() + " " +
                        results.Trends[0].Propability.ToString() + "\n" + results.Trends[1].Direction.ToString() + " " +
                        results.Trends[1].Propability.ToString() + "\n" + results.Trends[2].Direction.ToString() + " " +
                        results.Trends[2].Propability.ToString() + "\n\nUsed network parameters: \n\n" +
@@ -94,6 +99,11 @@ namespace BMMSI
             }
         }
 
+        /// <summary>
+        /// Metoda obsługująca przyciśnięcie guzika tworzenia nowych sieci.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void button1_Click(object sender, EventArgs e)
         {
             Form options = new Option();

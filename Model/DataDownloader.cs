@@ -12,10 +12,16 @@ using DTO.DTOEventArgs;
 
 namespace Model
 {
+    /// <summary>
+    /// Singleton odpowiedzialny za dostarczenie metod związanych z pobieraniem danych z internetu.
+    /// </summary>
     public class DataDownloader
     {
         private static DataDownloader instance;
 
+        /// <summary>
+        /// Instancja reprezentująca singleton.
+        /// </summary>
         public static DataDownloader Instance
         {
             get
@@ -33,6 +39,9 @@ namespace Model
 
         private int numberOfDownloadedFilesAssignOnlyInPropertySetter;
 
+        /// <summary>
+        /// Ścieżka zapisu danych historycznych pobieranych z internetu.
+        /// </summary>
         public string DataDirectory { get; set; }
 
         private int NumberOfDownloadedFiles
@@ -83,6 +92,9 @@ namespace Model
         
         private List<DateTime> exchangeDates;
 
+        /// <summary>
+        /// Lista dat notowań.
+        /// </summary>
         public List<DateTime> ExchangeDates
         {
             get
@@ -96,12 +108,21 @@ namespace Model
             }
         }
 
+        /// <summary>
+        /// Data pierwszego notowania.
+        /// </summary>
         public DateTime FirstStockExchangeQuotationDate { get; set; }
 
+        /// <summary>
+        /// Zdarzenie wywoływane, gdy pobieranie zostanie zakończone.
+        /// </summary>
         public event EventHandler DownloadComplete;
 
         private string downloadStatusAssignOnlyThruPropertySetter;
 
+        /// <summary>
+        /// Stan pobierania.
+        /// </summary>
         public string DownloadStatus
         {
             get
@@ -123,10 +144,16 @@ namespace Model
             }
         }
 
+        /// <summary>
+        /// Zdarzenie wywoływane, gdy postęp pobierania się zmieni.
+        /// </summary>
         public event EventHandler<DownloadProgressChangedDTOEventArgs> DownloadProgressChanged;
 
         private List<DateTime> datesToDownload;
 
+        /// <summary>
+        /// Postęp pobierania wyrażony w procentach.
+        /// </summary>
         public double DownloadProgress
         {
             get
@@ -140,12 +167,18 @@ namespace Model
             }
         }
         
+        /// <summary>
+        /// Prywatny konstruktor.
+        /// </summary>
         private DataDownloader()
         {
             this.DataDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
             Directory.CreateDirectory(this.DataDirectory);
         }
         
+        /// <summary>
+        /// Metoda pobierania danych historycznych.
+        /// </summary>
         public void DownloadData()
         {    
             this.DownloadStatus = "Initializing download.";
@@ -201,6 +234,11 @@ namespace Model
             }
         }
 
+        /// <summary>
+        /// Metoda pobierania pliku asynchronicznie.
+        /// </summary>
+        /// <param name="address">Adres do pobrania.</param>
+        /// <param name="path">Ścieżka do zapisania.</param>
         private void DownloadFileAsync(string address, string path)
         {
             using (WebClient webClient = new WebClient())
@@ -211,6 +249,11 @@ namespace Model
             }
         }
 
+        /// <summary>
+        /// Metoda pobierania pliku.
+        /// </summary>
+        /// <param name="address">Adres do pobrania.</param>
+        /// <param name="path">Ścieżka do zapisania.</param>
         public void DownloadFile(string address, string path)
         {
             using (WebClient webClient = new WebClient())
@@ -220,6 +263,11 @@ namespace Model
             }
         }
 
+        /// <summary>
+        /// Metoda wywoływana, gdy zostanie pobrany plik danych historycznych.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void FileDownloaded(object sender, AsyncCompletedEventArgs e)
         {
             this.NumberOfDownloadedFiles++;
@@ -234,6 +282,9 @@ namespace Model
             }
         }
 
+        /// <summary>
+        /// Metoda usuwania błędnych plików danych historycznych. Aktualnie nie używana, trwa bardzo długo.
+        /// </summary>
         private void DeleteIncorrectFiles()
         {
             string dataPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data\\";
@@ -257,6 +308,10 @@ namespace Model
             }
         }
 
+        /// <summary>
+        /// Metoda pobierania dat notowań.
+        /// </summary>
+        /// <returns>Lista dat notowań.</returns>
         private List<DateTime> DownloadExchangeDates()
         {
             List<DateTime> result = new List<DateTime>();
